@@ -16,7 +16,7 @@ export default function AIConcierge() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "👋 Hi! I'm your AI business concierge. How can I help you grow your business today?"
+      content: "👋 Hi! I'm your AI Agent. I can help you understand our 300+ business services, answer questions about compliance, digital marketing, operations, and more. How can I assist you today?"
     }
   ]);
   const [input, setInput] = useState("");

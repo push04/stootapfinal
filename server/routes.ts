@@ -4,10 +4,20 @@ import { storage } from "./storage-db";
 import { seedDatabase } from "./seed";
 import { ZodError } from "zod";
 import { requireAdmin, loginAdmin } from "./auth";
+import Razorpay from "razorpay";
+import crypto from "crypto";
 
 // AI Concierge configuration
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const AI_MODEL = "deepseek/deepseek-chat-v3-0324:free"; // Cost-effective model
+
+// Razorpay configuration
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+const razorpayInstance = RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET ? new Razorpay({
+  key_id: RAZORPAY_KEY_ID,
+  key_secret: RAZORPAY_KEY_SECRET,
+}) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await seedDatabase();
@@ -163,6 +173,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(400).json({ error: "Failed to clear cart" });
+    }
+  });
+
+  // Payment API (Razorpay)
+  app.get("/api/payment/razorpay-key", (_req, res) => {
+    if (!RAZORPAY_KEY_ID) {
+      return res.status(500).json({ error: "Razorpay not configured" });
+    }
+    res.json({ key: RAZORPAY_KEY_ID });
+  });
+
+  app.post("/api/payment/create-order", async (req, res) => {
+    try {
+      if (!razorpayInstance) {
+        console.error("Razorpay not configured - missing credentials");
+        return res.status(500).json({ error: "Razorpay not configured. Please contact support." });
+      }
+
+      const { amount, currency = "INR", receipt, notes } = req.body;
+
+      if (!amount) {
+        return res.status(400).json({ error: "Amount is required" });
+      }
+
+      const options = {
+        amount: Math.round(amount * 100),
+        currency,
+        receipt: receipt || `order_${Date.now()}`,
+        notes: notes || {},
+      };
+
+      console.log("Creating Razorpay order with amount:", options.amount / 100, currency);
+      
+      const razorpayOrder = await razorpayInstance.orders.create(options);
+      
+      console.log("Razorpay order created successfully:", razorpayOrder.id);
+      res.json(razorpayOrder);
+    } catch (error: any) {
+      console.error("Razorpay order creation failed:", error);
+      console.error("Error details:", {
+        message: error.message,
+        description: error.error?.description,
+        code: error.error?.code,
+        statusCode: error.statusCode
+      });
+      
+      res.status(500).json({ 
+        error: "Failed to create payment order",
+        details: error.error?.description || error.message || "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/payment/verify", async (req, res) => {
+    try {
+      if (!RAZORPAY_KEY_SECRET) {
+        return res.status(500).json({ error: "Razorpay not configured" });
+      }
+
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body;
+
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !orderId) {
+        return res.status(400).json({ error: "Missing required payment details" });
+      }
+
+      const sign = razorpay_order_id + "|" + razorpay_payment_id;
+      const expectedSign = crypto
+        .createHmac("sha256", RAZORPAY_KEY_SECRET)
+        .update(sign.toString())
+        .digest("hex");
+
+      if (razorpay_signature === expectedSign) {
+        await storage.updateOrder(orderId, {
+          status: "paid",
+          razorpayOrderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+        });
+
+        const order = await storage.getOrder(orderId);
+        
+        if (order && order.customerEmail) {
+          await storage.createNotification({
+            userId: order.userId || "guest",
+            type: "payment_success",
+            title: "Payment Successful",
+            message: `Your payment of ₹${order.totalInr} was successful. Order ID: ${order.id}`,
+            actionUrl: `/orders/${order.id}`,
+          });
+        }
+
+        res.json({ success: true, message: "Payment verified successfully" });
+      } else {
+        res.status(400).json({ error: "Invalid payment signature" });
+      }
+    } catch (error) {
+      console.error("Payment verification failed:", error);
+      res.status(500).json({ error: "Payment verification failed" });
+    }
+  });
+
+  app.post("/api/payment/webhook", async (req, res) => {
+    try {
+      if (!RAZORPAY_KEY_SECRET) {
+        return res.status(500).json({ error: "Razorpay not configured" });
+      }
+
+      const webhookSignature = req.headers["x-razorpay-signature"] as string;
+      const webhookBody = JSON.stringify(req.body);
+
+      const expectedSignature = crypto
+        .createHmac("sha256", RAZORPAY_KEY_SECRET)
+        .update(webhookBody)
+        .digest("hex");
+
+      if (webhookSignature !== expectedSignature) {
+        return res.status(400).json({ error: "Invalid webhook signature" });
+      }
+
+      const event = req.body.event;
+      const paymentEntity = req.body.payload?.payment?.entity;
+
+      if (event === "payment.captured") {
+        console.log("Payment captured:", paymentEntity);
+      } else if (event === "payment.failed") {
+        console.log("Payment failed:", paymentEntity);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Webhook processing failed:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
     }
   });
 
@@ -426,6 +568,173 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
       res.json(service);
     } catch (error) {
       res.status(500).json({ error: "Failed to update service" });
+    }
+  });
+
+  // Notification APIs
+  app.get("/api/notifications/:userId", async (req, res) => {
+    try {
+      const notifications = await storage.getUserNotifications(req.params.userId);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/:userId/unread", async (req, res) => {
+    try {
+      const notifications = await storage.getUnreadNotifications(req.params.userId);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch unread notifications" });
+    }
+  });
+
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    try {
+      const notification = await storage.markNotificationRead(req.params.id);
+      res.json(notification);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  app.post("/api/notifications/:userId/mark-all-read", async (req, res) => {
+    try {
+      await storage.markAllNotificationsRead(req.params.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark all notifications as read" });
+    }
+  });
+
+  // Support Tickets APIs
+  app.get("/api/tickets/:userId", async (req, res) => {
+    try {
+      const tickets = await storage.getUserTickets(req.params.userId);
+      res.json(tickets);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tickets" });
+    }
+  });
+
+  app.get("/api/admin/tickets", requireAdmin, async (_req, res) => {
+    try {
+      const tickets = await storage.getAllTickets();
+      res.json(tickets);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tickets" });
+    }
+  });
+
+  app.post("/api/tickets", async (req, res) => {
+    try {
+      const { insertTicketSchema } = await import("@shared/schema");
+      const validated = insertTicketSchema.parse(req.body);
+      const ticket = await storage.createTicket(validated);
+      res.json(ticket);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create ticket" });
+    }
+  });
+
+  app.get("/api/tickets/:id/replies", async (req, res) => {
+    try {
+      const replies = await storage.getTicketReplies(req.params.id);
+      res.json(replies);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch ticket replies" });
+    }
+  });
+
+  app.post("/api/tickets/:id/replies", async (req, res) => {
+    try {
+      const { insertTicketReplySchema } = await import("@shared/schema");
+      const validated = insertTicketReplySchema.parse({
+        ...req.body,
+        ticketId: req.params.id,
+      });
+      const reply = await storage.createTicketReply(validated);
+      res.json(reply);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create reply" });
+    }
+  });
+
+  app.patch("/api/admin/tickets/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const ticket = await storage.updateTicket(id, updates);
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+      res.json(ticket);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update ticket" });
+    }
+  });
+
+  // Documents APIs
+  app.get("/api/orders/:orderId/documents", async (req, res) => {
+    try {
+      const documents = await storage.getOrderDocuments(req.params.orderId);
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch documents" });
+    }
+  });
+
+  app.post("/api/documents", async (req, res) => {
+    try {
+      const { insertDocumentSchema } = await import("@shared/schema");
+      const validated = insertDocumentSchema.parse(req.body);
+      const document = await storage.createDocument(validated);
+      res.json(document);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create document" });
+    }
+  });
+
+  // Audit Logs APIs
+  app.get("/api/admin/audit-logs", requireAdmin, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const logs = await storage.getAuditLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
+  app.post("/api/admin/audit-log", requireAdmin, async (req, res) => {
+    try {
+      const { action, resourceType, resourceId, details } = req.body;
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.headers["user-agent"];
+      
+      const log = await storage.createAuditLog({
+        userId: req.session?.adminId || "system",
+        action,
+        resourceType,
+        resourceId,
+        details,
+        ipAddress,
+        userAgent,
+      });
+      
+      res.json(log);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create audit log" });
     }
   });
 

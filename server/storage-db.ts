@@ -8,6 +8,14 @@ import {
   orderItems,
   leads,
   cartItems,
+  notifications,
+  notificationPreferences,
+  documents,
+  tickets,
+  ticketReplies,
+  auditLogs,
+  subscriptionPlans,
+  userSubscriptions,
   type Profile,
   type InsertProfile,
   type Category,
@@ -22,6 +30,22 @@ import {
   type InsertLead,
   type CartItem,
   type InsertCartItem,
+  type Notification,
+  type InsertNotification,
+  type NotificationPreferences,
+  type InsertNotificationPreferences,
+  type Document,
+  type InsertDocument,
+  type Ticket,
+  type InsertTicket,
+  type TicketReply,
+  type InsertTicketReply,
+  type AuditLog,
+  type InsertAuditLog,
+  type SubscriptionPlan,
+  type InsertSubscriptionPlan,
+  type UserSubscription,
+  type InsertUserSubscription,
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
@@ -172,6 +196,139 @@ export class DatabaseStorage implements IStorage {
 
   async clearCart(sessionId: string): Promise<void> {
     await db.delete(cartItems).where(eq(cartItems.sessionId, sessionId));
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const result = await db.insert(notifications).values(notification).returning();
+    return result[0];
+  }
+
+  async getUserNotifications(userId: string): Promise<Notification[]> {
+    return await db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+  }
+
+  async getUnreadNotifications(userId: string): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async markNotificationRead(id: string): Promise<Notification | undefined> {
+    const result = await db.update(notifications).set({ read: true }).where(eq(notifications.id, id)).returning();
+    return result[0];
+  }
+
+  async markAllNotificationsRead(userId: string): Promise<void> {
+    await db.update(notifications).set({ read: true }).where(eq(notifications.userId, userId));
+  }
+
+  async getUserNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined> {
+    const result = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, userId)).limit(1);
+    return result[0];
+  }
+
+  async createNotificationPreferences(prefs: InsertNotificationPreferences): Promise<NotificationPreferences> {
+    const result = await db.insert(notificationPreferences).values(prefs).returning();
+    return result[0];
+  }
+
+  async updateNotificationPreferences(userId: string, updates: Partial<InsertNotificationPreferences>): Promise<NotificationPreferences | undefined> {
+    const result = await db.update(notificationPreferences).set(updates).where(eq(notificationPreferences.userId, userId)).returning();
+    return result[0];
+  }
+
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const result = await db.insert(documents).values(document).returning();
+    return result[0];
+  }
+
+  async getOrderDocuments(orderId: string): Promise<Document[]> {
+    return await db.select().from(documents).where(eq(documents.orderId, orderId)).orderBy(desc(documents.createdAt));
+  }
+
+  async getDocument(id: string): Promise<Document | undefined> {
+    const result = await db.select().from(documents).where(eq(documents.id, id)).limit(1);
+    return result[0];
+  }
+
+  async updateDocument(id: string, updates: Partial<InsertDocument>): Promise<Document | undefined> {
+    const result = await db.update(documents).set(updates).where(eq(documents.id, id)).returning();
+    return result[0];
+  }
+
+  async createTicket(ticket: InsertTicket): Promise<Ticket> {
+    const result = await db.insert(tickets).values(ticket).returning();
+    return result[0];
+  }
+
+  async getTicket(id: string): Promise<Ticket | undefined> {
+    const result = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getUserTickets(userId: string): Promise<Ticket[]> {
+    return await db.select().from(tickets).where(eq(tickets.userId, userId)).orderBy(desc(tickets.createdAt));
+  }
+
+  async getAllTickets(): Promise<Ticket[]> {
+    return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+  }
+
+  async updateTicket(id: string, updates: Partial<InsertTicket>): Promise<Ticket | undefined> {
+    const result = await db.update(tickets).set({ ...updates, updatedAt: new Date() }).where(eq(tickets.id, id)).returning();
+    return result[0];
+  }
+
+  async createTicketReply(reply: InsertTicketReply): Promise<TicketReply> {
+    const result = await db.insert(ticketReplies).values(reply).returning();
+    return result[0];
+  }
+
+  async getTicketReplies(ticketId: string): Promise<TicketReply[]> {
+    return await db.select().from(ticketReplies).where(eq(ticketReplies.ticketId, ticketId)).orderBy(ticketReplies.createdAt);
+  }
+
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const result = await db.insert(auditLogs).values(log).returning();
+    return result[0];
+  }
+
+  async getAuditLogs(limit = 100): Promise<AuditLog[]> {
+    return await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
+  }
+
+  async getUserAuditLogs(userId: string, limit = 50): Promise<AuditLog[]> {
+    return await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.createdAt)).limit(limit);
+  }
+
+  async createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    const result = await db.insert(subscriptionPlans).values(plan).returning();
+    return result[0];
+  }
+
+  async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.active, true));
+  }
+
+  async getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined> {
+    const result = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription> {
+    const result = await db.insert(userSubscriptions).values(subscription).returning();
+    return result[0];
+  }
+
+  async getUserSubscriptions(userId: string): Promise<UserSubscription[]> {
+    return await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId)).orderBy(desc(userSubscriptions.createdAt));
+  }
+
+  async updateUserSubscription(id: string, updates: Partial<InsertUserSubscription>): Promise<UserSubscription | undefined> {
+    const result = await db.update(userSubscriptions).set(updates).where(eq(userSubscriptions.id, id)).returning();
+    return result[0];
   }
 }
 
