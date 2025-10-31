@@ -10,6 +10,35 @@ The application is built as a full-stack TypeScript solution using React on the 
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (October 31, 2025)
+
+**Major Enhancements:**
+- ✅ Migrated from in-memory storage to PostgreSQL with Drizzle ORM
+- ✅ Implemented secure admin authentication with session management
+- ✅ Created comprehensive admin dashboard with analytics, order management, and lead tracking
+- ✅ Added complete order creation and management APIs
+- ✅ Built checkout page with order processing
+- ✅ Added Supabase schema export and Netlify deployment documentation
+- ✅ Configured production deployment settings
+- ✅ Implemented security improvements: password hashing, session regeneration, environment-based secrets
+
+**New Features:**
+- Admin Portal (accessible at `/admin/login`)
+  - Username: admin
+  - Password: @Stootap123 (default, configurable via env)
+  - Dashboard with real-time analytics
+  - Order status management
+  - Lead tracking
+  - Service management
+- Checkout flow with order creation
+- Enhanced cart persistence
+- Production-ready security features
+
+**Documentation:**
+- `NETLIFY_DEPLOYMENT.md` - Complete deployment guide with all environment variables
+- `supabase_schema/` - Database schema export with setup instructions
+- `Stootap_Supabase_Schema.tar.gz` - Packaged schema files
+
 ## System Architecture
 
 ### Frontend Architecture

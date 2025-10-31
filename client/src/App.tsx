@@ -16,6 +16,9 @@ import Students from "@/pages/Students";
 import Dashboard from "@/pages/Dashboard";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
+import AdminLogin from "@/pages/AdminLogin";
+import AdminDashboard from "@/pages/AdminDashboard";
+import Checkout from "@/pages/Checkout";
 
 function Router() {
   return (
@@ -30,6 +33,9 @@ function Router() {
       <Route path="/students" component={Students} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile" component={Profile} />
+      <Route path="/checkout" component={Checkout} />
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
