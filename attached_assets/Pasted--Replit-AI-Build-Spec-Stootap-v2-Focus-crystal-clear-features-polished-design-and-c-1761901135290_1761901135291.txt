@@ -1,0 +1,482 @@
+# Replit AI Build Spec — **Stootap v2**
+
+**Focus:** crystal‑clear features, polished design, and complete auth pages (Login, Register, Profile, 404).
+**Deploy:** GitHub → Netlify (I’ll supply credentials).
+**Integrations:** Supabase (Auth + DB + Storage), Razorpay (payments), OpenRouter (AI), Netlify Forms (lead capture backup).
+
+---
+
+## 0) What to Build
+
+Create a production‑ready web app **Stootap** that helps students and businesses launch and grow in India. Ship a frictionless catalog → cart → Razorpay checkout, AI concierge for guidance, lead capture via forms, and a tidy dashboard. Deliver a professional, unique, **sleek** UI with **dark & light** modes, **micro‑interactions**, **glass overlays**, and **elevated shadows**.
+
+**Use EXACT hero/nav copy:**
+
+* **Logo:** `Stootap`
+* **Navigation:** `For Students | For Businesses | Login | Sign Up`
+* **H1:** `Your Entire Business, Handled.`
+* **H2:** `From idea to IMPACT. From concept to running brand. 300+ services. One platform.`
+* **CTAs:** `Student? Get Started` → `/students`, `Business? Explore Services` → `/services`
+
+---
+
+## 1) Tech + Hosting
+
+* **Framework:** Next.js 14 (App Router) + TypeScript (Netlify Next Runtime)
+* **UI:** Tailwind CSS + **shadcn/ui** + **Lucide** icons
+* **Animations:** Framer Motion (page, section, and hover micro‑interactions)
+* **State/Data:** React Query for client fetching; Next Server Actions for simple writes
+* **DB/Auth/Storage:** Supabase
+* **Payments:** Razorpay (Checkout + Orders API + Webhooks)
+* **AI:** OpenRouter (streamed chat + function calling)
+* **Forms:** Netlify Forms (backup capture); primary flow writes to Supabase
+* **Testing:** Vitest/RTL + Playwright smoke
+* **Analytics (optional):** Netlify Analytics or Plausible via env flag
+
+**Netlify**: add `@netlify/plugin-nextjs` in `netlify.toml`. Prefer Next route handlers; keep Functions for webhooks if desired.
+
+```toml
+# netlify.toml
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["razorpay"]
+```
+
+**ENV (set in Netlify UI):**
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+OPENROUTER_API_KEY=
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+NEXT_PUBLIC_ANALYTICS=off|netlify|plausible
+```
+
+---
+
+## 2) Feature Checklist (Ship all)
+
+1. **Service Catalog & Detail**
+
+   * Category filters, search, cards with icon, summary, ETA, price; service detail pages with Problem → Outcome → Includes → Prereqs → Timeline → FAQs → Reviews.
+2. **Cart & Checkout**
+
+   * Add/Remove items, tax breakdown (GST @ 18% configurable), totals; Razorpay Checkout; success/fail states; order confirmation page.
+3. **Payments (Razorpay)**
+
+   * `POST /api/razorpay/order` → create order + persist draft in `orders`/`order_items`.
+   * `POST /api/razorpay/verify` → verify signature and mark **paid**.
+   * `POST /api/razorpay/webhook` → verify header signature; upsert into `webhook_events`; reconcile states.
+4. **Lead Capture (Form)**
+
+   * `LeadForm` (name, email, phone, I am: student|business, message, consent). Validated with Zod.
+   * Primary: serverless handler writes to Supabase `leads`; **Netlify Forms** as fallback (hidden form attributes).
+5. **AI Concierge (OpenRouter)**
+
+   * Floating chat widget (except `/admin`) with onboarding questions (stage, budget, industry, timeline, persona). Suggest bundles and draft orders; insert `leads` via function calling.
+6. **Dashboard**
+
+   * Overview, Orders, Purchased Services, Documents (upload to Supabase Storage), Support.
+7. **Admin**
+
+   * CRUD categories/services (icon picker), toggle active, update prices; view orders/payments/webhooks; manage leads and posts.
+8. **Important Pages (Auth + System)**
+
+   * **/login** (email + password OR passwordless OTP/magic link via Supabase; Google optional)
+   * **/register** (name, email, phone, role: student|business, password; consent checkbox)
+   * **/profile** (view/edit profile, update role, change password, upload avatar, view KYC/documents list)
+   * **/auth/forgot-password** (request reset, success state)
+   * **/auth/verify-email** (instruction state)
+   * **/404** (search box + CTAs back to Home and Services)
+   * All forms: realtime validation, helpful error states, success toasts.
+
+---
+
+## 3) UX & Design Polish (Dark/Light + Motion)
+
+**Design Personality:** premium, calm, confident. Minimal noise, high clarity.
+
+**Fonts:** Inter Variable (text) + Plus Jakarta Sans (headings) — self‑host, preload, fallbacks.
+
+**Color Tokens:**
+
+* `bg`: slate‑950 (dark), slate‑50 (light)
+* `text`: slate‑100/300 (dark), slate‑900/600 (light)
+* `primary`: indigo‑600/700; `accent`: emerald‑500/600
+* `surface`: slate‑900/100 with glass overlays using `backdrop-blur-md` + 6–12% white/black alpha
+
+**Elevation & Glass:**
+
+* Cards: `rounded-2xl` + `shadow-xl` (light) / `shadow-2xl` (dark subtle) + `backdrop-blur` glass on hero/nav.
+
+**Motion (Framer Motion):**
+
+* Page transition: fade+rise `duration:0.35s` `ease:[0.22,1,0.36,1]`
+* Card hover: scale 1.02 + shadow intensify; button hover: `y:-1px` + subtle glow
+* Staggered list reveal for service grids (40ms per item)
+* Respect `prefers-reduced-motion`
+
+**Micro‑interactions:**
+
+* Focus rings visible (outline + offset), tooltips on icons, skeleton loaders (shimmer) for cards, toast confirmations on actions.
+
+**Components to Polish:**
+
+* `Button` (primary, secondary, ghost), `Input`, `Select`, `Badge`, `Card`, `Tabs`, `Dialog`, `Sheet`, `Toast`, `Skeleton`, `Pagination`, `DataTable` (for Admin)
+
+**Imagery:** royalty‑free, compressed **WebP/AVIF**, descriptive ALT text. Category banners with subtle gradient + glass label.
+
+**Accessibility:** semantic landmarks, aria labels, keyboard traps avoided, contrast AA, logical tab order.
+
+**Performance Budgets:** LCP < 2.5s, CLS < 0.1, JS < 300KB initial (gz). Optimize images, code‑split routes, cache fonts.
+
+---
+
+## 4) Pages & Acceptance Criteria (Concise)
+
+### Home `/`
+
+* Hero with H1/H2, two CTAs; trust bar ("Secure payments via Razorpay • India‑first compliance")
+* Category tiles (animated) linking to `/services/[category]`
+
+### Students `/students`
+
+* Funding Explorer (cards from `funding_opportunities` + filters)
+* Learning Hub (posts tagged `learning`)
+* CTA to AI concierge pre‑seeded as student
+
+### Services `/services`
+
+* Filter bar (category, price, ETA) + search; paginated grid of `ServiceCard`s with hover lift
+
+### Service Detail `/services/[slug]`
+
+* Problem → Outcome → Includes → Prereqs → Timeline → FAQs → Reviews; price, ETA; Add to Cart
+
+### Checkout `/checkout`
+
+* Cart items, GST breakdown, totals, address/contact capture, Razorpay Checkout
+
+### Order Confirmation `/orders/[id]`
+
+* Payment status (paid|failed|pending), upload docs CTA, next steps
+
+### Dashboard `/dashboard/*`
+
+* Overview (recent orders, tasks), Orders list with statuses, Services purchased, Documents (upload/list), Support link
+
+### Admin `/admin/*`
+
+* Services CRUD (form with name, slug, price, ETA, summary, long description bullets, icon), Orders/Payments, Leads, Posts
+
+### **Auth & System**
+
+* **/login**: email+password + Google; option for magic link/OTP. Show errors & loading states.
+* **/register**: name, email, phone, role, password (+ policy checks). Post‑success message.
+* **/profile**: editable profile fields; avatar upload; show role; link to documents; save feedback toast.
+* **/auth/forgot-password**: form + email sent state.
+* **/auth/verify-email**: instruction state post‑signup.
+* **/404**: friendly illustration, search input, CTAs to Home and Services.
+
+---
+
+## 5) Data Model (Supabase) — Required Tables
+
+Use the following (same as v1) and enable RLS with owner‑only select on user‑owned rows:
+
+* `profiles(id, full_name, phone, role, created_at)` (FK → auth.users)
+* `categories(id, slug, name, description, sort_order, created_at)`
+* `services(id, category_id, slug, name, summary, long_description, base_price_inr, sku, eta_days, icon, active, created_at)`
+* `orders(id, user_id, status, subtotal_inr, gst_inr, total_inr, razorpay_order_id, razorpay_payment_id, razorpay_signature, created_at)`
+* `order_items(id, order_id, service_id, name, unit_price_inr, qty, total_inr, created_at)`
+* `webhook_events(id, source, event_type, payload, created_at)`
+* `leads(id, user_id, kind, message, captured_via, metadata, created_at)`
+* `documents(id, user_id, order_id, name, url, kind, created_at)`
+* `funding_opportunities(...)`, `posts(...)`
+
+Seed **categories/services** from the catalog at the end of this doc. Each service: summary, bullet long_description (3–5 bullets), ETA, base price, icon.
+
+---
+
+## 6) API Endpoints (Next route handlers or Netlify Functions)
+
+* `POST /api/razorpay/order` → create Razorpay order + draft DB order
+* `POST /api/razorpay/verify` → verify signature → mark paid
+* `POST /api/razorpay/webhook` → verify header signature → store `webhook_events` → reconcile
+* `POST /api/forms/lead` → validate (Zod) → insert into `leads` (+ Netlify Forms hidden backup)
+* `POST /api/ai/concierge` → OpenRouter stream; function calls to insert leads & compose bundles
+
+**Security:** input validation (Zod), anti‑spam honeypot on forms, basic rate‑limit, CSRF tokens for non‑GET forms.
+
+---
+
+## 7) Testing (must include)
+
+* **Unit (Vitest):** tax calc, totals, Razorpay HMAC verify
+* **E2E (Playwright):** browse → add to cart → test payment (Razorpay test key) → webhook simulate → order success; submit lead form → row appears in `leads`
+
+---
+
+## 8) SEO, Accessibility, Content
+
+* Meta titles/description per page, sitemap.xml, robots.txt, JSON‑LD Product on service detail
+* Aria labels, keyboard navigation, color contrast AA, motion reduction
+* Copy tone: simple, benefit‑led; avoid jargon
+
+---
+
+## 9) **Service Catalog (Seed EXACTLY)**
+
+### 1. BUSINESS BIRTH & LEGAL DNA (0–3 Months)
+
+**> Business Structure & Registration**
+
+* Business Idea Validation & Structuring Advice
+* Proprietorship Firm Setup
+* Partnership Firm Deed & Registration
+* Limited Liability Partnership (LLP) Incorporation
+* Private Limited Company Incorporation
+* One Person Company (OPC) Incorporation
+* Name Reservation & Approval (SPICe+)
+* Director Identification Number (DIN)
+* Digital Signature Certificate (DSC)
+
+**> Primary Registrations (The Absolute Basics)**
+
+* Business PAN Card Application
+* Tax Deduction Account Number (TAN)
+* Shop & Establishment License
+* Udyam (MSME) Registration
+* Professional Tax Registration
+* GST Registration & GSTIN Allotment
+* GST HSN/SAC Code Classification
+
+**> Brand Protection**
+
+* Trademark Search & Filing (Name/Logo)
+* Trademark Application Tracking & Follow‑up
+* Copyright Registration (Content/Creative)
+* Design Registration
+
+### 2. MONEY & BANKING BACKBONE
+
+**> Financial Setup**
+
+* Business Bank Account Opening (Current A/C)
+* Payment Gateway Integration (Razorpay, CCAvenue)
+* UPI QR Code for Business
+* POS Machine Setup
+* Accounting Software Setup (Tally, Zoho Books)
+* Chart of Accounts Creation
+* Invoice Template & Billing System Setup
+
+**> Regular Financial Compliance**
+
+* Monthly GST Return Filing (GSTR‑1, GSTR‑3B)
+* GST Annual Return (GSTR‑9)
+* TDS Calculation & Deduction
+* TDS Return Filing (Form 26Q, 24Q)
+* Advance Tax Calculation & Payment
+* Income Tax Return Filing for Business (ITR‑3, ITR‑4)
+* Professional Tax Return Filing
+
+**> Payroll & Staff Management**
+
+* Employee Provident Fund (EPF) Registration
+* Employee State Insurance (ESIC) Registration
+* Payroll Processing & Salary Slip Generation
+* Form 16 Generation for Employees
+
+### 3. DIGITAL FOOTPRINT & ONLINE WAR
+
+**> Website & Identity**
+
+* Domain Name Registration (.in, .com)
+* Professional Business Email Hosting
+* Basic 5‑Page Website Development
+* E‑commerce Website Development (Shopify, WooCommerce)
+* Website SEO Audit & On‑Page Optimization
+* Website Speed & Performance Optimization
+* Website Security (SSL) & Maintenance
+
+**> Social Media & Presence**
+
+* Google My Business Profile Setup & Verification
+* Social Media Profile Setup (FB, Insta, LinkedIn, X)
+* Social Media Bio & Content Optimization
+* Social Media Content Calendar (Monthly)
+* Social Media Management & Engagement (Monthly Retainer)
+
+**> Digital Advertising**
+
+* Google Ads (Search) Campaign Setup
+* Google Display Ads Setup
+* Meta (Facebook/Instagram) Ads Setup
+* LinkedIn Ads Setup
+* Ad Creative Design (Static/Video)
+* Ad Performance Tracking & Reporting
+
+### 4. OPERATIONS, LOGISTICS & DELIVERY
+
+**> Physical Operations**
+
+* Vendor Identification & Onboarding
+* Raw Material Sourcing
+* Inventory Management System Setup
+* Warehouse Storage Solution
+* Courier & Logistics Partner Onboarding (Delhivery, Shiprocket)
+* Packaging Design & Material Sourcing
+* Custom Packaging & Branding
+* Office Space Search & Lease Negotiation
+* Business Electricity Connection
+* Business Internet & Phone Connection
+
+**> Process & Management**
+
+* CRM Software Setup (HubSpot, Zoho CRM)
+* Project Management Tool Setup (Asana, Trello)
+* Standard Operating Procedures (SOPs) Creation
+* Customer Support System Setup (Email, Chat, Phone)
+
+### 5. HIRING, TEAM & HR MACHINE
+
+**> Recruitment & Onboarding**
+
+* Job Description Writing
+* Job Posting on Major Portals
+* Candidate Sourcing & Screening
+* Employment Agreement Drafting
+* Appointment Letter Issuance
+* Employee Background Verification
+
+**> HR Compliance & Management**
+
+* Employee Handbook & Policy Creation
+* Attendance System Setup (Biometric/Software)
+* Leave & Attendance Policy Drafting
+* Code of Conduct & Anti‑Sexual Harassment Policy
+* Performance Appraisal System Setup
+
+### 6. GROWTH, FUNDING & SCALING
+
+**> Funding & Investor Ready**
+
+* Investor Pitch Deck Creation
+* Financial Model & Projections (3–5 Years)
+* Business Valuation Report
+* Due Diligence Document Preparation
+* Introduction to Angel Investors/VCs
+* Bank Loan Proposal & Application (Mudra, CGTMSE)
+* Government Scheme Application (Startup India, PMEGP)
+
+**> Strategic Growth**
+
+* Market Research & Competitor Analysis
+* New Product/Service Launch Strategy
+* Sales Strategy & Sales Playbook
+* Channel Partner/Distributor Agreement
+* Franchise Model Development
+* International Expansion Strategy
+
+**> Advanced Marketing**
+
+* Email Marketing Campaign Setup (Mailchimp, Sendinblue)
+* Lead Generation Funnel Creation
+* Content Marketing Strategy
+* Blog Writing & Management
+* Influencer Marketing Campaign
+* Customer Retention & Loyalty Program
+
+### 7. SPECIALIZED & INDUSTRY‑SPECIFIC
+
+**> Food & Beverage**
+
+* FSSAI License (Basic/State/Central)
+* Health/Trade License
+* Eating House License
+* Bar License
+* Food Safety Supervisor Training
+
+**> E‑commerce & Retail**
+
+* Marketplace Account Setup (Amazon, Flipkart, Meesho)
+* Product Catalog Management
+* Product Photography & Listing
+* E‑commerce Return & Refund Policy
+* E‑commerce Shipping Policy
+
+**> Import‑Export**
+
+* Import Export Code (IEC) Registration
+* Customs Clearance Assistance
+* Shipping Bill & Bill of Lading
+* Export Incentive Scheme Guidance (MEIS, RoSCTL)
+
+**> Manufacturing**
+
+* Factory License
+* Pollution Control Board (PCB) NOC
+* Fire NOC & Safety Audit
+* BIS Certification
+* CE Certification
+
+**> Real Estate & Construction**
+
+* RERA Registration
+* Building Plan Approval
+* Land Use Conversion
+* Occupancy Certificate
+
+**> Healthcare**
+
+* Pharmacy License
+* Clinic Registration
+* Drug License
+* Biomedical Waste Management Authorization
+
+**> Education**
+
+* Educational Institution Registration
+* Affiliation Assistance (CBSE, ICSE, State Board)
+* NGO/Society/Trust Registration
+
+### 8. RISK, INSURANCE & EXIT
+
+**> Protection**
+
+* Business Liability Insurance
+* Professional Indemnity Insurance
+* Product Liability Insurance
+* Cyber Insurance
+* Key Person Insurance
+* Group Health Insurance for Employees
+
+**> Exit & Audit**
+
+* Business Closure Advisory (Winding Up)
+* GST Cancellation
+* Company Strike Off
+* Internal Audit
+* Statutory Audit
+* Tax Audit
+
+---
+
+## 10) Final Acceptance
+
+* Netlify deploy succeeds; **dark/light** themes + glass overlays + motion visible.
+* Can browse catalog, add to cart, complete **test payment**; order marked **paid** via verify + webhook.
+* Lead form writes to `leads` (and captured by Netlify Forms backup).
+* AI concierge onboards and proposes bundles; can create draft order/lead.
+* Auth pages (Login, Register, Profile, Forgot, Verify) fully functional; **/404** designed and helpful.
+* Admin can CRUD services and view orders/payments/leads.
