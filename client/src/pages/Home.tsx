@@ -79,8 +79,8 @@ export default function Home() {
               </Card>
 
               <Card className="p-8 text-center">
-                <div className="inline-flex p-4 rounded-2xl bg-accent/10 mb-4">
-                  <TrendingUp className="h-8 w-8 text-accent" />
+                <div className="inline-flex p-4 rounded-2xl bg-primary/10 mb-4">
+                  <TrendingUp className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Growth Focused</h3>
                 <p className="text-muted-foreground">

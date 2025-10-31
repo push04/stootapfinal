@@ -1,11 +1,14 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, Menu, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Moon, Sun, Menu, X, ShoppingCart } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
 
 export default function Navigation() {
   const { theme, toggleTheme } = useTheme();
+  const { itemCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -41,6 +44,16 @@ export default function Navigation() {
             <Button asChild data-testid="button-signup">
               <Link href="/register">Sign Up</Link>
             </Button>
+            <Link href="/checkout">
+              <Button variant="ghost" size="icon" className="relative" aria-label="View cart">
+                <ShoppingCart className="h-5 w-5" />
+                {itemCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary">
+                    {itemCount}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="icon"

@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, DollarSign, ShoppingCart, Users, Package, TrendingUp, Mail } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { LogOut, DollarSign, ShoppingCart, Users, Package, TrendingUp, Mail, Download, Search } from "lucide-react";
 import { format } from "date-fns";
 
 interface Analytics {
@@ -27,6 +28,8 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orderSearch, setOrderSearch] = useState("");
+  const [leadSearch, setLeadSearch] = useState("");
 
   useEffect(() => {
     checkAuth();
@@ -109,6 +112,72 @@ export default function AdminDashboard() {
       console.error("Failed to update order", err);
     }
   };
+
+  const exportToCSV = (data: any[], filename: string, headers: string[]) => {
+    const csvContent = [
+      headers.join(","),
+      ...data.map(row => 
+        headers.map(header => {
+          const value = row[header] || "";
+          return `"${String(value).replace(/"/g, '""')}"`;
+        }).join(",")
+      )
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${filename}_${format(new Date(), "yyyy-MM-dd")}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportOrders = () => {
+    const exportData = filteredOrders.map(order => ({
+      id: order.id,
+      customerName: order.customerName || "",
+      customerEmail: order.customerEmail || "",
+      customerPhone: order.customerPhone || "",
+      totalInr: order.totalInr,
+      status: order.status,
+      createdAt: format(new Date(order.createdAt), "yyyy-MM-dd HH:mm:ss")
+    }));
+    exportToCSV(exportData, "stootap_orders", [
+      "id", "customerName", "customerEmail", "customerPhone", "totalInr", "status", "createdAt"
+    ]);
+  };
+
+  const handleExportLeads = () => {
+    const exportData = filteredLeads.map(lead => ({
+      id: lead.id,
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      role: lead.role,
+      message: lead.message,
+      createdAt: format(new Date(lead.createdAt), "yyyy-MM-dd HH:mm:ss")
+    }));
+    exportToCSV(exportData, "stootap_leads", [
+      "id", "name", "email", "phone", "role", "message", "createdAt"
+    ]);
+  };
+
+  const filteredOrders = orders.filter(order => 
+    !orderSearch ||
+    order.id.toLowerCase().includes(orderSearch.toLowerCase()) ||
+    (order.customerName || "").toLowerCase().includes(orderSearch.toLowerCase()) ||
+    (order.customerEmail || "").toLowerCase().includes(orderSearch.toLowerCase())
+  );
+
+  const filteredLeads = leads.filter(lead =>
+    !leadSearch ||
+    lead.name.toLowerCase().includes(leadSearch.toLowerCase()) ||
+    lead.email.toLowerCase().includes(leadSearch.toLowerCase()) ||
+    lead.phone.includes(leadSearch)
+  );
 
   if (loading) {
     return (
@@ -197,10 +266,29 @@ export default function AdminDashboard() {
           <TabsContent value="orders" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>All Orders</CardTitle>
-                <CardDescription>
-                  Manage and track all customer orders
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>All Orders</CardTitle>
+                    <CardDescription>
+                      Manage and track all customer orders
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search orders..."
+                        value={orderSearch}
+                        onChange={(e) => setOrderSearch(e.target.value)}
+                        className="pl-9 w-64"
+                      />
+                    </div>
+                    <Button onClick={handleExportOrders} variant="outline" size="sm">
+                      <Download className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -215,14 +303,14 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orders.length === 0 ? (
+                    {filteredOrders.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          No orders yet
+                          {orderSearch ? "No orders match your search" : "No orders yet"}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      orders.map((order) => (
+                      filteredOrders.map((order) => (
                         <TableRow key={order.id}>
                           <TableCell className="font-mono text-sm">
                             {order.id.slice(0, 8)}...
@@ -271,10 +359,29 @@ export default function AdminDashboard() {
           <TabsContent value="leads" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>All Leads</CardTitle>
-                <CardDescription>
-                  Captured leads from contact forms
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>All Leads</CardTitle>
+                    <CardDescription>
+                      Captured leads from contact forms
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search leads..."
+                        value={leadSearch}
+                        onChange={(e) => setLeadSearch(e.target.value)}
+                        className="pl-9 w-64"
+                      />
+                    </div>
+                    <Button onClick={handleExportLeads} variant="outline" size="sm">
+                      <Download className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -289,14 +396,14 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leads.length === 0 ? (
+                    {filteredLeads.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          No leads yet
+                          {leadSearch ? "No leads match your search" : "No leads yet"}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      leads.map((lead) => (
+                      filteredLeads.map((lead) => (
                         <TableRow key={lead.id}>
                           <TableCell className="font-medium">{lead.name}</TableCell>
                           <TableCell>{lead.email}</TableCell>

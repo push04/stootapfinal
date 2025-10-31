@@ -26,7 +26,7 @@ export default function Checkout() {
     customerAddress: "",
   });
 
-  const sessionId = localStorage.getItem("cartSessionId") || "";
+  const sessionId = localStorage.getItem("sessionId") || "";
 
   useEffect(() => {
     loadCart();

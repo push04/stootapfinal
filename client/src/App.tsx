@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CartProvider } from "@/contexts/CartContext";
+import AIConcierge from "@/components/AIConcierge";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -49,6 +50,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Router />
+            <AIConcierge />
           </TooltipProvider>
         </CartProvider>
       </ThemeProvider>
