@@ -35,6 +35,13 @@ export default function Navigation() {
               For Businesses
             </Link>
             <Link
+              href="/contact"
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+              data-testid="link-contact"
+            >
+              Contact
+            </Link>
+            <Link
               href="/login"
               className="text-sm font-medium text-foreground hover:text-primary transition-colors"
               data-testid="link-login"
@@ -104,6 +111,14 @@ export default function Navigation() {
               onClick={() => setMobileMenuOpen(false)}
             >
               For Businesses
+            </Link>
+            <Link
+              href="/contact"
+              className="block text-sm font-medium text-foreground hover:text-primary transition-colors"
+              data-testid="link-contact-mobile"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Contact
             </Link>
             <Link
               href="/login"

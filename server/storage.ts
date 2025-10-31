@@ -25,6 +25,8 @@ export interface IStorage {
   getAllCategories(): Promise<Category[]>;
   getCategoryBySlug(slug: string): Promise<Category | undefined>;
   createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: string, category: Partial<InsertCategory>): Promise<Category | undefined>;
+  deleteCategory(id: string): Promise<boolean>;
 
   getAllServices(active?: boolean): Promise<Service[]>;
   getServicesByCategory(categoryId: string): Promise<Service[]>;
@@ -32,6 +34,7 @@ export interface IStorage {
   getServiceBySlug(slug: string): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
   updateService(id: string, service: Partial<InsertService>): Promise<Service | undefined>;
+  deleteService(id: string): Promise<boolean>;
 
   getOrder(id: string): Promise<Order | undefined>;
   getOrdersBySession(sessionId: string): Promise<Order[]>;

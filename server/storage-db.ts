@@ -84,6 +84,16 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
+    const result = await db.update(categories).set(updates).where(eq(categories.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    const result = await db.delete(categories).where(eq(categories.id, id)).returning();
+    return result.length > 0;
+  }
+
   async getAllServices(active?: boolean): Promise<Service[]> {
     if (active !== undefined) {
       return await db.select().from(services).where(eq(services.active, active));
@@ -113,6 +123,11 @@ export class DatabaseStorage implements IStorage {
   async updateService(id: string, updates: Partial<InsertService>): Promise<Service | undefined> {
     const result = await db.update(services).set(updates).where(eq(services.id, id)).returning();
     return result[0];
+  }
+
+  async deleteService(id: string): Promise<boolean> {
+    const result = await db.delete(services).where(eq(services.id, id)).returning();
+    return result.length > 0;
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
