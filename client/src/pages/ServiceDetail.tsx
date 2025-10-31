@@ -14,6 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { getIconComponent } from "@/lib/iconMap";
@@ -27,6 +33,7 @@ import {
   FileCheck,
   ShoppingCart,
   ArrowLeft,
+  HelpCircle,
 } from "lucide-react";
 
 export default function ServiceDetail() {
@@ -265,6 +272,36 @@ export default function ServiceDetail() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground" data-testid="text-service-timeline">{service.timeline}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {service.faqs && Array.isArray(service.faqs) && service.faqs.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <HelpCircle className="h-5 w-5" />
+                      Frequently Asked Questions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Accordion type="single" collapsible className="w-full">
+                      {(service.faqs as Array<{ question: string; answer: string }>).map((faq, index) => {
+                        if (!faq || !faq.question || !faq.answer) {
+                          return null;
+                        }
+                        return (
+                          <AccordionItem key={index} value={`item-${index}`}>
+                            <AccordionTrigger className="text-left hover:no-underline">
+                              {faq.question}
+                            </AccordionTrigger>
+                            <AccordionContent className="text-muted-foreground">
+                              {faq.answer}
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
                   </CardContent>
                 </Card>
               )}

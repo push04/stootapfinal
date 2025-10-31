@@ -12,6 +12,31 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 31, 2025)
 
+**Latest Bug Fixes & Robustness Improvements:**
+- ✅ Fixed critical React Query bug causing 404 errors ([object Object] issue)
+- ✅ Added URL query parameter support for category filtering from home page tiles
+- ✅ Implemented robust data validation to filter out invalid service records
+- ✅ Added defensive null/undefined checks in FAQ rendering
+- ✅ Enhanced error handling across Services and ServiceDetail pages
+- ✅ All services now load correctly with smooth UX and no console errors
+
+**UI/UX Enhancements:**
+- ✅ Enhanced dark mode with improved contrast (background 4%, foreground 98%)
+- ✅ Added Framer Motion animations to Hero, CategoryTile, and ServiceCard components
+- ✅ Implemented FAQ accordion section on service detail pages
+- ✅ Smooth hover effects and viewport-aware entrance animations
+- ✅ Professional animations with modest durations (0.2-0.5s) and proper easing
+
+**Replit Environment Setup:**
+- ✅ Fixed all TypeScript/LSP errors by installing dependencies
+- ✅ Configured Drizzle ORM with proper neon-serverless and neon-http drivers
+- ✅ Set up PostgreSQL database and ran migrations successfully
+- ✅ Seeded database with 8 categories and 50 services
+- ✅ Configured dev workflow on port 5000 with Vite HMR
+- ✅ Added .gitignore for Node.js projects
+- ✅ Configured autoscale deployment for production
+- ✅ Verified frontend proxy configuration (allowedHosts: true)
+
 **Major Enhancements:**
 - ✅ Migrated from in-memory storage to PostgreSQL with Drizzle ORM
 - ✅ Implemented secure admin authentication with session management
@@ -35,6 +60,7 @@ Preferred communication style: Simple, everyday language.
 - Production-ready security features
 
 **Documentation:**
+- `NETLIFY_ENVIRONMENT_VARIABLES.md` - Comprehensive guide with all required/optional environment variables
 - `NETLIFY_DEPLOYMENT.md` - Complete deployment guide with all environment variables
 - `supabase_schema/` - Database schema export with setup instructions
 - `Stootap_Supabase_Schema.tar.gz` - Packaged schema files

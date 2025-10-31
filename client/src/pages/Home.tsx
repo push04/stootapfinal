@@ -45,13 +45,14 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {categories.map((category) => (
+              {categories.map((category, index) => (
                 <CategoryTile
                   key={category.slug}
                   slug={category.slug}
                   name={category.name}
                   icon={category.icon}
                   serviceCount={category.count}
+                  index={index}
                 />
               ))}
             </div>
