@@ -1,12 +1,21 @@
 # Netlify Deployment Guide for Stootap
 
-This guide provides step-by-step instructions for deploying the Stootap business services platform to Netlify.
+This guide provides step-by-step instructions for deploying the Stootap business services platform to Netlify as a serverless application.
+
+## Architecture Overview
+
+Stootap has been configured to run on Netlify using:
+- **Frontend:** Vite-built React application (static files)
+- **Backend:** Express app wrapped as Netlify Functions (serverless)
+- **Database:** PostgreSQL with connection pooling (Supabase/Neon)
+- **Sessions:** Database-backed session storage (serverless-compatible)
 
 ## Prerequisites
 
 - GitHub repository with your Stootap code
 - Netlify account (sign up at https://netlify.com)
-- Database (Supabase or Neon)
+- Database (Supabase recommended, or Neon)
+- Node.js 20+ installed locally (for testing)
 
 ## Required Environment Variables
 
@@ -23,13 +32,15 @@ DATABASE_URL=postgresql://postgres.PROJECT_REF:YOUR_PASSWORD@aws-0-ap-south-1.po
 1. Go to your Supabase project dashboard (https://supabase.com/dashboard)
 2. Click on "Project Settings" (gear icon) → "Database"
 3. Under "Connection string", select "URI" tab
-4. Copy the connection pooler string (Port 6543)
+4. Copy the **connection pooler string (Port 6543)** - This is critical for serverless!
 5. Replace `[YOUR-PASSWORD]` with your database password
 
 **Example:**
 ```
 DATABASE_URL=postgresql://postgres.abc123:MySecureP@ssw0rd@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
 ```
+
+**⚠️ IMPORTANT:** Must use the pooler connection (port 6543), not direct connection (port 5432), for serverless compatibility.
 
 #### Option 2: Using Supabase Credentials
 Alternatively, you can use individual Supabase credentials (the DATABASE_URL will be built automatically):
@@ -71,7 +82,7 @@ node -e "console.log(require('crypto').createHash('sha256').update('MySecureP@ss
 # Then set: ADMIN_PASSWORD_HASH=e8b7f3c2d1a9...
 ```
 
-### Payment Gateway (Razorpay)
+### Payment Gateway (Razorpay) - Optional
 
 ```
 RAZORPAY_KEY_ID=rzp_live_your_key_id
@@ -89,11 +100,15 @@ RAZORPAY_KEY_SECRET=your_secret_key
 - Use test keys (`rzp_test_...`) for development/staging
 - Use live keys (`rzp_live_...`) for production only
 - Never commit these keys to version control
-- Razorpay integration is optional but required for accepting online payments
 
-**For testing without Razorpay:**
-- Orders can still be created with status "pending"
-- Payment must be processed manually or offline
+### AI Concierge (OpenRouter) - Optional
+
+```
+OPENROUTER_API_KEY=sk-or-v1-...
+```
+**Description:** OpenRouter API for AI concierge functionality  
+**Where to get it:** Sign up at https://openrouter.ai/ and generate an API key  
+**Note:** This is optional. The app works without it, but AI features will be disabled.
 
 ### Node Environment
 ```
@@ -106,15 +121,14 @@ NODE_ENV=production
 
 ### 1. Prepare Your Repository
 
-Ensure your `package.json` has the correct build scripts:
+The repository is already configured with the correct build scripts:
 
 ```json
 {
   "scripts": {
-    "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "start": "NODE_ENV=production node dist/index.js",
-    "db:push": "drizzle-kit push"
+    "build": "npm run build:client && npm run build:functions",
+    "build:client": "vite build",
+    "build:functions": "node build-functions.js"
   }
 }
 ```
@@ -128,12 +142,12 @@ Ensure your `package.json` has the correct build scripts:
 5. Configure build settings:
    - **Build command:** `npm run build`
    - **Publish directory:** `dist/public`
-   - **Functions directory:** `dist` (if using Netlify Functions)
+   - **Functions directory:** `netlify-functions-build`
 
 ### 3. Configure Environment Variables
 
 1. Go to Site settings → Environment variables
-2. Add all required variables listed above
+2. Add all required variables listed above (at minimum: DATABASE_URL, SESSION_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD_HASH)
 3. Click "Save"
 
 ### 4. Deploy Database Schema
@@ -150,12 +164,13 @@ Before first deployment, set up your database. Choose **one** of these methods:
 6. Click "Run" to execute the schema
 7. Verify all tables are created:
    - Go to "Table Editor" in sidebar
-   - Check that you see tables like: profiles, categories, services, orders, leads, cart_items, etc.
+   - Check that you see tables like: profiles, categories, services, orders, leads, cart_items, session (for sessions), etc.
 
 **What this does:**
 - Creates all necessary database tables
 - Sets up foreign key relationships
 - Creates indexes for performance
+- Creates session table for database-backed sessions
 - Adds default data (categories and services)
 
 #### Method 2: Using Drizzle Kit (For Updates and Migrations)
@@ -176,7 +191,12 @@ Before first deployment, set up your database. Choose **one** of these methods:
 
 3. If you get conflicts or errors, use force mode:
    ```bash
-   npm run db:push --force
+   npm run db:push -- --force
+   ```
+
+4. Seed the database with initial data:
+   ```bash
+   npm run db:seed
    ```
 
 **When to use this method:**
@@ -184,25 +204,54 @@ Before first deployment, set up your database. Choose **one** of these methods:
 - When adding new columns or tables
 - When you've modified `shared/schema.ts`
 
-**Important Notes:**
-- The database connection uses **pooler connection (port 6543)** for better serverless performance
-- If DATABASE_URL is not set, the app automatically builds it from SUPABASE_URL + SUPABASE_DB_PASSWORD
-- Connection format: `postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres`
-
 ### 5. Deploy Site
 
-1. Click "Deploy site" in Netlify
+1. Click "Deploy site" in Netlify (or push to your connected branch)
 2. Wait for build to complete (typically 2-5 minutes)
-3. Access your site at the provided Netlify URL
+3. Monitor the build logs for any errors
+4. Access your site at the provided Netlify URL
 
 ## Post-Deployment
 
 ### Verify Deployment
 
-1. Visit your site URL
-2. Test main pages (Home, Services, etc.)
-3. Test admin login at `/admin/login`
-4. Check database connectivity
+1. Visit your site URL - you should see the homepage
+2. Test main pages (Home, Services, Contact)
+3. Test a service detail page and add to cart
+4. Test admin login at `/admin/login` using your custom credentials
+5. Check database connectivity by viewing services and creating a test lead
+
+### API Endpoint Structure
+
+The backend API is now accessed via Netlify Functions:
+- **Main API:** `/.netlify/functions/api/*`
+- **Webhooks:** `/.netlify/functions/razorpay-webhook`
+
+The `netlify.toml` includes redirects so `/api/*` automatically maps to `/.netlify/functions/api/*`. Your frontend code doesn't need to change!
+
+### Testing Key Flows
+
+1. **Service Catalog:**
+   - Browse services ✓
+   - Filter by category ✓
+   - View service details ✓
+
+2. **Shopping Cart:**
+   - Add items to cart ✓
+   - Update quantities ✓
+   - Remove items ✓
+
+3. **Checkout:**
+   - Fill customer details ✓
+   - Create order ✓
+   - Process payment (if Razorpay configured) ✓
+
+4. **Admin Dashboard:**
+   - Login with custom credentials ✓
+   - View analytics ✓
+   - Manage orders ✓
+   - View leads ✓
+   - Edit services ✓
 
 ### Custom Domain Setup
 
@@ -221,71 +270,112 @@ Before first deployment, set up your database. Choose **one** of these methods:
 - **Build logs:** Deploys → Select deployment → View logs
 - **Function logs:** Functions → View function logs
 - **Real-time logs:** Use Netlify CLI: `netlify logs`
+- **Function analytics:** Monitor cold starts, execution time, and errors
 
 ## Troubleshooting
 
 ### Build Fails
 
 **Error:** "MODULE_NOT_FOUND"  
-**Solution:** Ensure all dependencies are in `package.json` and run `npm install`
+**Solution:** Ensure all dependencies are in `package.json`. Run `npm install` locally to verify.
 
 **Error:** "SESSION_SECRET is required"  
-**Solution:** Add SESSION_SECRET environment variable
+**Solution:** Add SESSION_SECRET environment variable in Netlify UI
+
+**Error:** "Cannot find module '@shared/schema'"  
+**Solution:** This should be resolved by the build script. Check build logs and ensure `build-functions.js` ran successfully.
 
 ### Database Connection Fails
 
 **Error:** "DATABASE_URL environment variable is required"  
-**Solution:** Add DATABASE_URL in environment variables
+**Solution:** Add DATABASE_URL in Netlify environment variables
 
 **Error:** "Connection timeout"  
-**Solution:** Check database URL format and ensure SSL mode is correct
+**Solution:** Ensure you're using the pooler connection (port 6543), not direct connection (port 5432)
+
+**Error:** "too many clients"  
+**Solution:** Use connection pooler URL (port 6543). This is critical for serverless!
 
 ### Admin Login Not Working
 
 **Error:** "Unauthorized"  
-**Solution:** Check ADMIN_USERNAME and ADMIN_PASSWORD_HASH are set correctly
+**Solution:** 
+1. Check ADMIN_USERNAME and ADMIN_PASSWORD_HASH are set correctly
+2. Verify password hash was generated correctly
+3. Check function logs for session-related errors
+4. Ensure SESSION_SECRET is set
+
+### Function Timeout
+
+**Error:** "Function execution timed out"  
+**Solution:** 
+1. Optimize database queries
+2. Check for slow API calls (AI, payment gateway)
+3. Review function logs for bottlenecks
+
+## Local Testing with Netlify Dev
+
+Before deploying, test locally:
+
+```bash
+# Install Netlify CLI globally
+npm install -g netlify-cli
+
+# Login to Netlify
+netlify login
+
+# Link to your site
+netlify link
+
+# Set environment variables locally
+netlify env:import .env.local
+
+# Run local dev server with Functions
+netlify dev
+```
+
+This runs your site exactly as it will on Netlify, with Functions support.
 
 ## Security Checklist
 
 - ✅ SESSION_SECRET is unique and not committed to repo
-- ✅ DATABASE_URL uses SSL connection (`sslmode=require`)
+- ✅ DATABASE_URL uses pooler connection with SSL
 - ✅ **CRITICAL:** Changed ADMIN_USERNAME and ADMIN_PASSWORD_HASH from defaults
 - ✅ Admin password is strong and unique (minimum 12 characters)
 - ✅ NODE_ENV=production is set
 - ✅ All sensitive data is in environment variables, not code
+- ✅ Netlify security headers are configured in `netlify.toml`
 
 **⚠️ READ SECURITY_NOTICE.md for complete admin security guidelines**
 
-## Performance Optimization
+## Performance & Limitations
 
-### Recommended Settings
+### Netlify Functions Limits
 
-1. **Enable Asset Optimization:**
-   - Site settings → Build & deploy → Post processing
-   - Enable: Bundle CSS, Minify CSS, Minify JS, Compress images
+- **Execution time:** 10 seconds (free tier), 26 seconds (Pro)
+- **Memory:** 1024 MB
+- **Payload size:** 6 MB
 
-2. **Configure Caching:**
-   Add `netlify.toml` to repository:
-   ```toml
-   [[headers]]
-     for = "/assets/*"
-     [headers.values]
-       Cache-Control = "public, max-age=31536000, immutable"
-   
-   [[headers]]
-     for = "/*"
-     [headers.values]
-       X-Frame-Options = "DENY"
-       X-Content-Type-Options = "nosniff"
-       Referrer-Policy = "strict-origin-when-cross-origin"
-   ```
+### Optimization Tips
 
-3. **Enable Incremental Builds:**
-   - Faster rebuild times for code changes
+1. **Database queries:** Use indexes, limit result sets, avoid N+1 queries
+2. **Session storage:** Using database-backed sessions (not memory) for serverless compatibility
+3. **Cold starts:** First request may be slower (~500ms-2s). Subsequent requests are faster.
+4. **Caching:** Static assets are cached at CDN edge, API responses are not cached
+
+### What Changed from Traditional Hosting
+
+- ❌ No long-running Express server
+- ✅ Express wrapped as serverless function
+- ❌ No in-memory session storage
+- ✅ Database-backed sessions via connect-pg-simple
+- ❌ No persistent in-memory caching
+- ✅ Database-backed storage for all data
 
 ## Support & Resources
 
 - **Netlify Documentation:** https://docs.netlify.com
+- **Netlify Functions:** https://docs.netlify.com/functions/overview/
 - **Supabase Documentation:** https://supabase.com/docs
 - **Drizzle ORM Documentation:** https://orm.drizzle.team
 
@@ -303,4 +393,4 @@ If deployment fails or has issues:
 ---
 
 **Last Updated:** October 31, 2025  
-**Version:** 2.0
+**Version:** 3.0 (Netlify Functions)

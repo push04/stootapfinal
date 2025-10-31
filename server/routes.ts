@@ -1,7 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage-db";
-import { seedDatabase } from "./seed";
 import { ZodError } from "zod";
 import { requireAdmin, loginAdmin } from "./auth";
 import Razorpay from "razorpay";
@@ -20,7 +19,6 @@ const razorpayInstance = RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET ? new Razorpay({
 }) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  await seedDatabase();
 
   // Categories API
   app.get("/api/categories", async (_req, res) => {
