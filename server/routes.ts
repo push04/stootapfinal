@@ -537,6 +537,26 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     }
   });
 
+  app.get("/api/admin/orders/:id/details", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const order = await storage.getOrder(id);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      const items = await storage.getOrderItemsByOrderId(id);
+      
+      res.json({
+        ...order,
+        items
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch order details" });
+    }
+  });
+
   app.get("/api/admin/leads", requireAdmin, async (_req, res) => {
     try {
       const leads = await storage.getAllLeads();
