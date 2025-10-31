@@ -138,18 +138,56 @@ Ensure your `package.json` has the correct build scripts:
 
 ### 4. Deploy Database Schema
 
-Before first deployment, set up your database:
+Before first deployment, set up your database. Choose **one** of these methods:
 
-1. **Using Supabase:**
-   - Go to SQL Editor in Supabase Dashboard
-   - Run the SQL file from `supabase_schema/schema.sql`
-   - Verify tables are created
+#### Method 1: Using Supabase SQL Editor (Recommended for First-Time Setup)
 
-2. **Using Drizzle Kit (Recommended):**
+1. Go to your Supabase project dashboard (https://supabase.com/dashboard)
+2. Click on "SQL Editor" in the left sidebar
+3. Click "New query" button
+4. Copy the entire content from `supabase_schema/schema.sql` in your project
+5. Paste it into the SQL Editor
+6. Click "Run" to execute the schema
+7. Verify all tables are created:
+   - Go to "Table Editor" in sidebar
+   - Check that you see tables like: profiles, categories, services, orders, leads, cart_items, etc.
+
+**What this does:**
+- Creates all necessary database tables
+- Sets up foreign key relationships
+- Creates indexes for performance
+- Adds default data (categories and services)
+
+#### Method 2: Using Drizzle Kit (For Updates and Migrations)
+
+1. Set your environment variables locally:
    ```bash
-   # Run locally with DATABASE_URL set
+   # Add to .env file (create if it doesn't exist)
+   DATABASE_URL=your-supabase-connection-string
+   # OR
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_DB_PASSWORD=your-password
+   ```
+
+2. Run the Drizzle push command:
+   ```bash
    npm run db:push
    ```
+
+3. If you get conflicts or errors, use force mode:
+   ```bash
+   npm run db:push --force
+   ```
+
+**When to use this method:**
+- When updating existing schema
+- When adding new columns or tables
+- When you've modified `shared/schema.ts`
+
+**Important Notes:**
+- The database connection uses **pooler connection (port 6543)** for better serverless performance
+- If DATABASE_URL is not set, the app automatically builds it from SUPABASE_URL + SUPABASE_DB_PASSWORD
+- Connection format: `postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:6543/postgres`
 
 ### 5. Deploy Site
 
