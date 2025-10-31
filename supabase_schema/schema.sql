@@ -212,6 +212,43 @@ CREATE TABLE "user_subscriptions" (
         "created_at" timestamp DEFAULT now() NOT NULL
 );
 
+-- Add foreign key constraints for data integrity
+ALTER TABLE services
+  ADD CONSTRAINT services_category_id_fkey 
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE;
+
+ALTER TABLE order_items
+  ADD CONSTRAINT order_items_order_id_fkey 
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
+
+ALTER TABLE order_items
+  ADD CONSTRAINT order_items_service_id_fkey 
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE RESTRICT;
+
+ALTER TABLE cart_items
+  ADD CONSTRAINT cart_items_service_id_fkey 
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE;
+
+ALTER TABLE documents
+  ADD CONSTRAINT documents_order_id_fkey 
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
+
+ALTER TABLE tickets
+  ADD CONSTRAINT tickets_user_id_fkey 
+  FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
+
+ALTER TABLE tickets
+  ADD CONSTRAINT tickets_order_id_fkey 
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL;
+
+ALTER TABLE ticket_replies
+  ADD CONSTRAINT ticket_replies_ticket_id_fkey 
+  FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE;
+
+ALTER TABLE user_subscriptions
+  ADD CONSTRAINT user_subscriptions_plan_id_fkey 
+  FOREIGN KEY (plan_id) REFERENCES subscription_plans(id) ON DELETE RESTRICT;
+
 -- Create indexes for better performance
 CREATE INDEX idx_services_category_id ON services(category_id);
 CREATE INDEX idx_services_active ON services(active);
@@ -219,10 +256,16 @@ CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_session_id ON orders(session_id);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX idx_order_items_service_id ON order_items(service_id);
 CREATE INDEX idx_cart_items_session_id ON cart_items(session_id);
+CREATE INDEX idx_cart_items_service_id ON cart_items(service_id);
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_read ON notifications(read);
+CREATE INDEX idx_documents_order_id ON documents(order_id);
 CREATE INDEX idx_tickets_user_id ON tickets(user_id);
 CREATE INDEX idx_tickets_status ON tickets(status);
+CREATE INDEX idx_ticket_replies_ticket_id ON ticket_replies(ticket_id);
+CREATE INDEX idx_user_subscriptions_user_id ON user_subscriptions(user_id);
 
 -- Add comments for documentation
 COMMENT ON TABLE profiles IS 'User profiles for customers and businesses';
@@ -238,3 +281,29 @@ COMMENT ON TABLE tickets IS 'Customer support tickets';
 COMMENT ON TABLE audit_logs IS 'System audit trail for compliance';
 COMMENT ON TABLE subscription_plans IS 'Available subscription tiers';
 COMMENT ON TABLE user_subscriptions IS 'Active user subscriptions';
+
+-- ============================================
+-- SEED DATA: Initial Categories and Services
+-- ============================================
+
+-- Insert default categories
+INSERT INTO categories (id, slug, name, description, sort_order) VALUES
+  ('cat_compliance', 'compliance', 'Compliance Services', 'Legal registrations and compliance management', 1),
+  ('cat_tax', 'tax-accounting', 'Tax & Accounting', 'Tax filing, accounting, and financial services', 2),
+  ('cat_legal', 'legal', 'Legal Services', 'Contracts, agreements, and legal documentation', 3),
+  ('cat_marketing', 'marketing', 'Marketing & Branding', 'Digital marketing and brand building', 4),
+  ('cat_funding', 'funding', 'Funding & Investment', 'Startup funding and investment opportunities', 5),
+  ('cat_hr', 'hr-payroll', 'HR & Payroll', 'Human resources and payroll management', 6)
+ON CONFLICT (slug) DO NOTHING;
+
+-- Insert sample services
+INSERT INTO services (id, category_id, slug, name, summary, base_price_inr, eta_days, active) VALUES
+  ('svc_gst_reg', 'cat_compliance', 'gst-registration', 'GST Registration', 'Complete GST registration with government filing', 2999.00, 7, true),
+  ('svc_company_reg', 'cat_compliance', 'company-registration', 'Company Registration', 'Private Limited Company registration including all documents', 9999.00, 14, true),
+  ('svc_trademark', 'cat_legal', 'trademark-registration', 'Trademark Registration', 'Register your brand trademark with government authorities', 5999.00, 30, true),
+  ('svc_itr_filing', 'cat_tax', 'itr-filing', 'ITR Filing', 'Income Tax Return filing for individuals and businesses', 1499.00, 3, true),
+  ('svc_bookkeeping', 'cat_tax', 'bookkeeping', 'Bookkeeping Services', 'Monthly bookkeeping and financial record maintenance', 3999.00, 7, true),
+  ('svc_logo_design', 'cat_marketing', 'logo-design', 'Logo Design', 'Professional logo design with multiple revisions', 4999.00, 5, true),
+  ('svc_website', 'cat_marketing', 'website-development', 'Website Development', 'Custom business website with responsive design', 14999.00, 21, true),
+  ('svc_pitch_deck', 'cat_funding', 'pitch-deck', 'Pitch Deck Creation', 'Investor pitch deck design and content', 7999.00, 7, true)
+ON CONFLICT (slug) DO NOTHING;

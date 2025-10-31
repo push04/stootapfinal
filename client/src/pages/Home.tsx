@@ -1,9 +1,9 @@
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
-import ContactFormSection from "@/components/ContactFormSection";
 import CategoryTile from "@/components/CategoryTile";
 import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   Building2,
@@ -14,6 +14,7 @@ import {
   Briefcase,
   GraduationCap,
   FileText,
+  ArrowRight,
 } from "lucide-react";
 
 const categories = [
@@ -33,8 +34,6 @@ export default function Home() {
       <Navigation />
       <main className="flex-1">
         <Hero />
-        
-        <ContactFormSection />
         
         <section className="py-16 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -101,6 +100,23 @@ export default function Home() {
                 </p>
               </Card>
             </div>
+          </div>
+        </section>
+
+        <section className="py-16 lg:py-24 bg-gradient-to-b from-primary/5 to-background">
+          <div className="mx-auto max-w-4xl px-4 lg:px-8 text-center">
+            <h2 className="text-3xl lg:text-4xl font-bold font-heading mb-4">
+              Ready to Get Started?
+            </h2>
+            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Have questions or ready to begin your journey? Our team is here to help you every step of the way.
+            </p>
+            <Link href="/contact">
+              <Button size="lg" className="text-lg px-8">
+                Contact Us
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
           </div>
         </section>
       </main>

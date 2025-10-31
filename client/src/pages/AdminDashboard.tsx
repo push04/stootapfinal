@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, DollarSign, ShoppingCart, Users, Package, TrendingUp, Mail, Download, Search, Eye, Edit, Trash2, Plus } from "lucide-react";
+import { LogOut, DollarSign, ShoppingCart, Users, Package, Download, Search, Eye } from "lucide-react";
 import { format } from "date-fns";
+import ServiceManagement from "@/components/admin/ServiceManagement";
+import CategoryManagement from "@/components/admin/CategoryManagement";
 
 interface Analytics {
   totalOrders: number;
@@ -621,147 +623,26 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="services" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Services Management</CardTitle>
-                    <CardDescription>
-                      Manage all services, prices, and availability
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {services.map((service) => (
-                        <TableRow key={service.id}>
-                          <TableCell className="font-medium">{service.name}</TableCell>
-                          <TableCell>
-                            {categories.find(c => c.id === service.categoryId)?.name || "Unknown"}
-                          </TableCell>
-                          <TableCell>₹{service.basePriceInr}</TableCell>
-                          <TableCell>
-                            <Badge variant={service.active ? "default" : "secondary"}>
-                              {service.active ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button size="sm" variant="outline">
-                                  <Edit className="w-4 h-4 mr-1" />
-                                  Edit
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle>Edit Service</DialogTitle>
-                                  <DialogDescription>
-                                    Update service details, pricing, and availability
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4 p-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label className="text-sm font-medium">Service Name</label>
-                                      <Input defaultValue={service.name} className="mt-1" />
-                                    </div>
-                                    <div>
-                                      <label className="text-sm font-medium">Price (INR)</label>
-                                      <Input type="number" defaultValue={service.basePriceInr} className="mt-1" />
-                                    </div>
-                                    <div>
-                                      <label className="text-sm font-medium">ETA (Days)</label>
-                                      <Input type="number" defaultValue={service.etaDays} className="mt-1" />
-                                    </div>
-                                    <div>
-                                      <label className="text-sm font-medium">SKU</label>
-                                      <Input defaultValue={service.sku || ""} className="mt-1" />
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium">Summary</label>
-                                    <Input defaultValue={service.summary} className="mt-1" />
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium">Long Description</label>
-                                    <textarea 
-                                      className="w-full min-h-[100px] p-2 border rounded-md" 
-                                      defaultValue={service.longDescription || ""}
-                                    />
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <input type="checkbox" defaultChecked={service.active} id={`active-${service.id}`} />
-                                    <label htmlFor={`active-${service.id}`} className="text-sm font-medium">
-                                      Active (visible to customers)
-                                    </label>
-                                  </div>
-                                  <div className="flex justify-end gap-2">
-                                    <Button variant="outline">Cancel</Button>
-                                    <Button>Save Changes</Button>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            <ServiceManagement 
+              services={services} 
+              categories={categories} 
+              onUpdate={() => {
+                loadServices();
+                loadAnalytics();
+              }} 
+            />
           </TabsContent>
 
           <TabsContent value="categories" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Categories Management</CardTitle>
-                    <CardDescription>
-                      Manage service categories and their order
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Slug</TableHead>
-                      <TableHead>Sort Order</TableHead>
-                      <TableHead>Services</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {categories.map((category) => (
-                      <TableRow key={category.id}>
-                        <TableCell className="font-medium">{category.name}</TableCell>
-                        <TableCell className="font-mono text-sm">{category.slug}</TableCell>
-                        <TableCell>{category.sortOrder || 0}</TableCell>
-                        <TableCell>
-                          {services.filter(s => s.categoryId === category.id).length} services
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <CategoryManagement 
+              categories={categories} 
+              services={services} 
+              onUpdate={() => {
+                loadCategories();
+                loadServices();
+                loadAnalytics();
+              }} 
+            />
           </TabsContent>
         </Tabs>
       </main>

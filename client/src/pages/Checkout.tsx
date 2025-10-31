@@ -10,14 +10,23 @@ import { Separator } from "@/components/ui/separator";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { ShoppingBag, CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 export default function Checkout() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   
   const [formData, setFormData] = useState({
     customerName: "",
@@ -30,7 +39,29 @@ export default function Checkout() {
 
   useEffect(() => {
     loadCart();
+    loadRazorpayScript();
   }, []);
+
+  const loadRazorpayScript = () => {
+    if (window.Razorpay) {
+      setRazorpayLoaded(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => setRazorpayLoaded(true);
+    script.onerror = () => {
+      console.error("Failed to load Razorpay script");
+      toast({
+        title: "Payment System Unavailable",
+        description: "Please try again later or contact support.",
+        variant: "destructive",
+      });
+    };
+    document.body.appendChild(script);
+  };
 
   const loadCart = async () => {
     if (!sessionId) {
@@ -63,6 +94,12 @@ export default function Checkout() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!razorpayLoaded) {
+      setError("Payment system is still loading. Please try again.");
+      return;
+    }
+
     setSubmitting(true);
 
     const { subtotal, gst, total } = calculateTotals();
@@ -76,7 +113,7 @@ export default function Checkout() {
     }));
 
     try {
-      const response = await fetch("/api/orders", {
+      const orderResponse = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -93,22 +130,103 @@ export default function Checkout() {
         }),
       });
 
-      if (response.ok) {
-        await fetch("/api/cart/clear", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId }),
-        });
-        
-        setSuccess(true);
-        setTimeout(() => setLocation("/"), 3000);
-      } else {
-        const data = await response.json();
-        setError(data.error || "Failed to create order");
+      if (!orderResponse.ok) {
+        const data = await orderResponse.json();
+        throw new Error(data.error || "Failed to create order");
       }
-    } catch (err) {
-      setError("An error occurred while placing your order");
-    } finally {
+
+      const order = await orderResponse.json();
+      
+      const razorpayKeyResponse = await fetch("/api/payment/razorpay-key");
+      if (!razorpayKeyResponse.ok) {
+        throw new Error("Payment system not configured. Please contact support.");
+      }
+      const { key } = await razorpayKeyResponse.json();
+
+      const razorpayOrderResponse = await fetch("/api/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: parseFloat(total.toFixed(2)),
+          currency: "INR",
+          receipt: order.id,
+          notes: {
+            orderId: order.id,
+            customerName: formData.customerName,
+            customerEmail: formData.customerEmail,
+          },
+        }),
+      });
+
+      if (!razorpayOrderResponse.ok) {
+        const errorData = await razorpayOrderResponse.json();
+        throw new Error(errorData.details || errorData.error || "Failed to create payment order");
+      }
+
+      const razorpayOrder = await razorpayOrderResponse.json();
+
+      const options = {
+        key,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: "Stootap",
+        description: "Business Services Payment",
+        order_id: razorpayOrder.id,
+        handler: async function (response: any) {
+          try {
+            const verifyResponse = await fetch("/api/payment/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                orderId: order.id,
+              }),
+            });
+
+            if (!verifyResponse.ok) {
+              throw new Error("Payment verification failed");
+            }
+
+            await fetch("/api/cart/clear", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sessionId }),
+            });
+
+            setSuccess(true);
+            setTimeout(() => setLocation("/"), 3000);
+          } catch (err: any) {
+            console.error("Payment verification error:", err);
+            setError("Payment verification failed. Please contact support with your order ID: " + order.id);
+            setSubmitting(false);
+          }
+        },
+        prefill: {
+          name: formData.customerName,
+          email: formData.customerEmail,
+          contact: formData.customerPhone,
+        },
+        notes: {
+          orderId: order.id,
+        },
+        theme: {
+          color: "#6366f1",
+        },
+        modal: {
+          ondismiss: function () {
+            setError("Payment cancelled. Your order has been saved and you can complete payment later.");
+            setSubmitting(false);
+          },
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      setError(err.message || "An error occurred while placing your order");
       setSubmitting(false);
     }
   };
