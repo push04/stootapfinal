@@ -1,7 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./storage-db";
 import { seedDatabase } from "./seed";
+import { ZodError } from "zod";
+import { requireAdmin, loginAdmin } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await seedDatabase();
@@ -157,6 +159,189 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(400).json({ error: "Failed to clear cart" });
+    }
+  });
+
+  // Orders API
+  app.post("/api/orders", async (req, res) => {
+    try {
+      const { insertOrderSchema } = await import("@shared/schema");
+      const validated = insertOrderSchema.parse(req.body);
+      
+      const order = await storage.createOrder(validated);
+      
+      if (req.body.items && Array.isArray(req.body.items)) {
+        for (const item of req.body.items) {
+          await storage.createOrderItem({
+            orderId: order.id,
+            serviceId: item.serviceId,
+            name: item.name,
+            unitPriceInr: item.unitPriceInr,
+            qty: item.qty,
+            totalInr: item.totalInr,
+          });
+        }
+      }
+      
+      res.json(order);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors 
+        });
+      }
+      res.status(400).json({ error: "Failed to create order" });
+    }
+  });
+
+  app.get("/api/orders/:id", async (req, res) => {
+    try {
+      const order = await storage.getOrder(req.params.id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      const items = await storage.getOrderItemsByOrderId(order.id);
+      res.json({ ...order, items });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch order" });
+    }
+  });
+
+  app.get("/api/orders/session/:sessionId", async (req, res) => {
+    try {
+      const orders = await storage.getOrdersBySession(req.params.sessionId);
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  // Admin Authentication
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password required" });
+      }
+      
+      const result = await loginAdmin(req, username, password);
+      
+      if (result.success) {
+        res.json({ success: true, message: result.message });
+      } else {
+        res.status(401).json({ error: result.message });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/admin/logout", (req, res) => {
+    if (req.session) {
+      req.session.adminId = undefined;
+    }
+    res.json({ success: true });
+  });
+
+  app.get("/api/admin/check", (req, res) => {
+    res.json({ isAdmin: !!req.session?.adminId });
+  });
+
+  // Admin Dashboard APIs
+  app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
+    try {
+      const orders = await storage.getAllOrders();
+      const leads = await storage.getAllLeads();
+      const services = await storage.getAllServices();
+      
+      const totalRevenue = orders
+        .filter(o => o.status === "completed")
+        .reduce((sum, o) => sum + parseFloat(o.totalInr.toString()), 0);
+      
+      const pendingOrders = orders.filter(o => o.status === "pending").length;
+      const completedOrders = orders.filter(o => o.status === "completed").length;
+      
+      const analytics = {
+        totalOrders: orders.length,
+        pendingOrders,
+        completedOrders,
+        totalRevenue: totalRevenue.toFixed(2),
+        totalLeads: leads.length,
+        totalServices: services.length,
+        activeServices: services.filter(s => s.active).length,
+        recentOrders: orders.slice(0, 10),
+        recentLeads: leads.slice(0, 10),
+      };
+      
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get("/api/admin/orders", requireAdmin, async (_req, res) => {
+    try {
+      const orders = await storage.getAllOrders();
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  app.patch("/api/admin/orders/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ error: "Status is required" });
+      }
+      
+      const order = await storage.updateOrder(id, { status });
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      res.json(order);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update order" });
+    }
+  });
+
+  app.get("/api/admin/leads", requireAdmin, async (_req, res) => {
+    try {
+      const leads = await storage.getAllLeads();
+      res.json(leads);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch leads" });
+    }
+  });
+
+  app.get("/api/admin/services", requireAdmin, async (_req, res) => {
+    try {
+      const services = await storage.getAllServices();
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch services" });
+    }
+  });
+
+  app.patch("/api/admin/services/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const service = await storage.updateService(id, updates);
+      if (!service) {
+        return res.status(404).json({ error: "Service not found" });
+      }
+      
+      res.json(service);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update service" });
     }
   });
 

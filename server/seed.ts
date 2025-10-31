@@ -1,4 +1,4 @@
-import { storage } from "./storage";
+import { storage } from "./storage-db";
 import type { InsertCategory, InsertService } from "@shared/schema";
 
 const categories: InsertCategory[] = [

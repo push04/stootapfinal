@@ -35,6 +35,8 @@ export interface IStorage {
 
   getOrder(id: string): Promise<Order | undefined>;
   getOrdersBySession(sessionId: string): Promise<Order[]>;
+  getOrdersByUser(userId: string): Promise<Order[]>;
+  getAllOrders(): Promise<Order[]>;
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order | undefined>;
 
@@ -182,6 +184,16 @@ export class MemStorage implements IStorage {
 
   async getOrdersBySession(sessionId: string): Promise<Order[]> {
     return Array.from(this.orders.values()).filter((o) => o.sessionId === sessionId);
+  }
+
+  async getOrdersByUser(userId: string): Promise<Order[]> {
+    return Array.from(this.orders.values()).filter((o) => o.userId === userId);
+  }
+
+  async getAllOrders(): Promise<Order[]> {
+    return Array.from(this.orders.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
   }
 
   async createOrder(insertOrder: InsertOrder): Promise<Order> {
