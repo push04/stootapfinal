@@ -39,15 +39,28 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
 
 export async function loginAdmin(req: Request, username: string, password: string): Promise<{ success: boolean; message: string }> {
   if (verifyAdmin(username, password)) {
-    if (req.session) {
-      req.session.regenerate((err) => {
-        if (err) {
-          console.error("Session regeneration error:", err);
-        }
-        req.session.adminId = "admin";
-      });
-    }
-    return { success: true, message: "Login successful" };
+    return new Promise((resolve) => {
+      if (req.session) {
+        req.session.regenerate((err) => {
+          if (err) {
+            console.error("Session regeneration error:", err);
+            resolve({ success: false, message: "Session error" });
+            return;
+          }
+          req.session.adminId = "admin";
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error("Session save error:", saveErr);
+              resolve({ success: false, message: "Session save error" });
+              return;
+            }
+            resolve({ success: true, message: "Login successful" });
+          });
+        });
+      } else {
+        resolve({ success: false, message: "No session available" });
+      }
+    });
   }
   return { success: false, message: "Invalid credentials" };
 }

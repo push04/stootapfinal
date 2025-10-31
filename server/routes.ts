@@ -5,6 +5,10 @@ import { seedDatabase } from "./seed";
 import { ZodError } from "zod";
 import { requireAdmin, loginAdmin } from "./auth";
 
+// AI Concierge configuration
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const AI_MODEL = "deepseek/deepseek-chat-v3-0324:free"; // Cost-effective model
+
 export async function registerRoutes(app: Express): Promise<Server> {
   await seedDatabase();
 
@@ -215,6 +219,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(orders);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  // AI Concierge API
+  app.post("/api/ai/concierge", async (req, res) => {
+    try {
+      const { messages, userRole = "business" } = req.body;
+      
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: "Messages array required" });
+      }
+
+      if (!OPENROUTER_API_KEY) {
+        return res.status(500).json({ error: "OpenRouter API key not configured" });
+      }
+
+      // Get all categories and services for context
+      const categories = await storage.getAllCategories();
+      const services = await storage.getAllServices(true);
+      
+      // Build system prompt with business context
+      const systemPrompt = `You are an AI business concierge for Stootap, a platform helping students and businesses in India launch and grow. You provide personalized guidance on business services.
+
+Available Service Categories:
+${categories.map(c => `- ${c.name}: ${c.description}`).join('\n')}
+
+You have access to ${services.length} services across ${categories.length} categories. When users ask about services:
+1. Understand their business needs
+2. Recommend relevant services from our catalog
+3. Explain benefits and outcomes clearly
+4. Help them find the right services for their goals
+5. Be friendly, professional, and concise
+
+User role: ${userRole}
+If they're a student, emphasize startup and funding opportunities. If business owner, focus on compliance and growth services.
+
+Keep responses under 150 words. Be helpful and guide them toward taking action.`;
+
+      // Make request to OpenRouter
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://stootap.com",
+          "X-Title": "Stootap AI Concierge"
+        },
+        body: JSON.stringify({
+          model: AI_MODEL,
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages
+          ],
+          stream: false,
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("OpenRouter API error:", errorText);
+        throw new Error(`OpenRouter API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const assistantMessage = data.choices?.[0]?.message?.content || "I apologize, but I couldn't generate a response. Please try again.";
+
+      res.json({ 
+        message: assistantMessage,
+        model: AI_MODEL,
+        usage: data.usage
+      });
+
+    } catch (error) {
+      console.error("AI Concierge error:", error);
+      res.status(500).json({ 
+        error: "Failed to process AI request",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
