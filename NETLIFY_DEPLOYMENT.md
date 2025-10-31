@@ -12,14 +12,36 @@ This guide provides step-by-step instructions for deploying the Stootap business
 
 Add these environment variables in Netlify Dashboard → Site Settings → Environment variables:
 
-### Database Configuration
+### Database Configuration (Supabase Recommended)
+
+#### Option 1: Using DATABASE_URL (Recommended)
 ```
-DATABASE_URL=postgresql://username:password@host:5432/database?sslmode=require
+DATABASE_URL=postgresql://postgres.PROJECT_REF:YOUR_PASSWORD@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
 ```
-**Description:** PostgreSQL connection string from Supabase or Neon database  
-**Where to get it:** 
-- Supabase: Project Settings → Database → Connection String (URI mode)
-- Neon: Connection Details → Connection String
+**Description:** PostgreSQL connection string from Supabase using the pooler connection  
+**Where to get it:**
+1. Go to your Supabase project dashboard (https://supabase.com/dashboard)
+2. Click on "Project Settings" (gear icon) → "Database"
+3. Under "Connection string", select "URI" tab
+4. Copy the connection pooler string (Port 6543)
+5. Replace `[YOUR-PASSWORD]` with your database password
+
+**Example:**
+```
+DATABASE_URL=postgresql://postgres.abc123:MySecureP@ssw0rd@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
+```
+
+#### Option 2: Using Supabase Credentials
+Alternatively, you can use individual Supabase credentials (the DATABASE_URL will be built automatically):
+```
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_DB_PASSWORD=your-database-password
+```
+**Where to get these:**
+1. **SUPABASE_URL:** Your project's API URL from Project Settings → API → Project URL
+2. **SUPABASE_DB_PASSWORD:** Database password you set during project creation (or reset it in Project Settings → Database → Database Settings → Reset Database Password)
+
+**Note:** The application will automatically construct the pooler connection string from these credentials.
 
 ### Session Management
 ```
@@ -48,6 +70,30 @@ node -e "console.log(require('crypto').createHash('sha256').update('MySecureP@ss
 # Output: e8b7f3c2d1a9...
 # Then set: ADMIN_PASSWORD_HASH=e8b7f3c2d1a9...
 ```
+
+### Payment Gateway (Razorpay)
+
+```
+RAZORPAY_KEY_ID=rzp_live_your_key_id
+RAZORPAY_KEY_SECRET=your_secret_key
+```
+**Description:** Razorpay payment gateway credentials for processing payments  
+**Where to get it:**
+1. Sign up for Razorpay account at https://razorpay.com
+2. Complete KYC verification to go live
+3. Go to Account & Settings → API Keys
+4. Generate API Keys (use test keys for testing: `rzp_test_...`)
+5. Copy both Key ID and Key Secret
+
+**⚠️ IMPORTANT:**
+- Use test keys (`rzp_test_...`) for development/staging
+- Use live keys (`rzp_live_...`) for production only
+- Never commit these keys to version control
+- Razorpay integration is optional but required for accepting online payments
+
+**For testing without Razorpay:**
+- Orders can still be created with status "pending"
+- Payment must be processed manually or offline
 
 ### Node Environment
 ```

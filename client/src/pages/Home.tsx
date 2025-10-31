@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
+import ContactFormSection from "@/components/ContactFormSection";
 import CategoryTile from "@/components/CategoryTile";
 import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
@@ -32,6 +33,8 @@ export default function Home() {
       <Navigation />
       <main className="flex-1">
         <Hero />
+        
+        <ContactFormSection />
         
         <section className="py-16 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">

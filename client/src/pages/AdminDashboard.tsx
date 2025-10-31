@@ -7,7 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { LogOut, DollarSign, ShoppingCart, Users, Package, TrendingUp, Mail, Download, Search } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { LogOut, DollarSign, ShoppingCart, Users, Package, TrendingUp, Mail, Download, Search, Eye, Edit, Trash2, Plus } from "lucide-react";
 import { format } from "date-fns";
 
 interface Analytics {
@@ -27,15 +30,22 @@ export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [orderSearch, setOrderSearch] = useState("");
   const [leadSearch, setLeadSearch] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedLead, setSelectedLead] = useState<any | null>(null);
+  const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
 
   useEffect(() => {
     checkAuth();
     loadAnalytics();
     loadOrders();
     loadLeads();
+    loadServices();
+    loadCategories();
   }, []);
 
   const checkAuth = async () => {
@@ -85,6 +95,45 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error("Failed to load leads", err);
+    }
+  };
+
+  const loadServices = async () => {
+    try {
+      const response = await fetch("/api/admin/services");
+      if (response.ok) {
+        const data = await response.json();
+        setServices(data);
+      }
+    } catch (err) {
+      console.error("Failed to load services", err);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await fetch("/api/categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (err) {
+      console.error("Failed to load categories", err);
+    }
+  };
+
+  const loadOrderDetails = async (orderId: string) => {
+    setOrderDetailsLoading(true);
+    try {
+      const response = await fetch(`/api/admin/orders/${orderId}/details`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedOrder(data);
+      }
+    } catch (err) {
+      console.error("Failed to load order details", err);
+    } finally {
+      setOrderDetailsLoading(false);
     }
   };
 
@@ -261,6 +310,8 @@ export default function AdminDashboard() {
           <TabsList>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
+            <TabsTrigger value="services">Services</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="space-y-4">
@@ -331,7 +382,86 @@ export default function AdminDashboard() {
                           <TableCell>
                             {format(new Date(order.createdAt), "MMM d, yyyy")}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="flex gap-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => loadOrderDetails(order.id)}
+                                >
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  View
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-3xl max-h-[90vh]">
+                                <DialogHeader>
+                                  <DialogTitle>Order Details</DialogTitle>
+                                  <DialogDescription>
+                                    Order ID: {selectedOrder?.id || order.id}
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <ScrollArea className="max-h-[70vh]">
+                                  {orderDetailsLoading ? (
+                                    <div className="flex items-center justify-center p-8">
+                                      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                  ) : selectedOrder ? (
+                                    <div className="space-y-6 p-4">
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                          <h4 className="font-semibold mb-2">Customer Information</h4>
+                                          <div className="space-y-1 text-sm">
+                                            <p><span className="text-muted-foreground">Name:</span> {selectedOrder.customerName || "N/A"}</p>
+                                            <p><span className="text-muted-foreground">Email:</span> {selectedOrder.customerEmail || "N/A"}</p>
+                                            <p><span className="text-muted-foreground">Phone:</span> {selectedOrder.customerPhone || "N/A"}</p>
+                                            <p><span className="text-muted-foreground">Address:</span> {selectedOrder.customerAddress || "N/A"}</p>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <h4 className="font-semibold mb-2">Payment Information</h4>
+                                          <div className="space-y-1 text-sm">
+                                            <p><span className="text-muted-foreground">Status:</span> <Badge>{selectedOrder.status}</Badge></p>
+                                            <p><span className="text-muted-foreground">Subtotal:</span> ₹{selectedOrder.subtotalInr}</p>
+                                            <p><span className="text-muted-foreground">GST:</span> ₹{selectedOrder.gstInr}</p>
+                                            <p><span className="text-muted-foreground font-semibold">Total:</span> <strong>₹{selectedOrder.totalInr}</strong></p>
+                                            {selectedOrder.razorpayOrderId && (
+                                              <p className="text-xs text-muted-foreground">Razorpay Order: {selectedOrder.razorpayOrderId}</p>
+                                            )}
+                                            {selectedOrder.razorpayPaymentId && (
+                                              <p className="text-xs text-muted-foreground">Payment ID: {selectedOrder.razorpayPaymentId}</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <Separator />
+                                      <div>
+                                        <h4 className="font-semibold mb-3">Order Items</h4>
+                                        <div className="space-y-2">
+                                          {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                                            selectedOrder.items.map((item: any) => (
+                                              <div key={item.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                                                <div>
+                                                  <p className="font-medium">{item.name}</p>
+                                                  <p className="text-sm text-muted-foreground">Qty: {item.qty} × ₹{item.unitPriceInr}</p>
+                                                </div>
+                                                <p className="font-semibold">₹{item.totalInr}</p>
+                                              </div>
+                                            ))
+                                          ) : (
+                                            <p className="text-sm text-muted-foreground">No items found</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <Separator />
+                                      <div className="text-xs text-muted-foreground">
+                                        <p>Created: {format(new Date(selectedOrder.createdAt), "PPpp")}</p>
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                </ScrollArea>
+                              </DialogContent>
+                            </Dialog>
                             <Select
                               value={order.status}
                               onValueChange={(value) => handleOrderStatusChange(order.id, value)}
@@ -393,12 +523,13 @@ export default function AdminDashboard() {
                       <TableHead>Role</TableHead>
                       <TableHead>Message</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead>Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredLeads.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground">
                           {leadSearch ? "No leads match your search" : "No leads yet"}
                         </TableCell>
                       </TableRow>
@@ -417,9 +548,216 @@ export default function AdminDashboard() {
                           <TableCell>
                             {format(new Date(lead.createdAt), "MMM d, yyyy")}
                           </TableCell>
+                          <TableCell>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => setSelectedLead(lead)}
+                                >
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  View
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Lead Details</DialogTitle>
+                                  <DialogDescription>
+                                    Captured on {format(new Date(lead.createdAt), "PPP")}
+                                  </DialogDescription>
+                                </DialogHeader>
+                                {selectedLead && (
+                                  <div className="space-y-4 p-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Name</p>
+                                        <p className="font-semibold">{selectedLead.name}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Role</p>
+                                        <Badge>{selectedLead.role}</Badge>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Email</p>
+                                        <p>{selectedLead.email}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                                        <p>{selectedLead.phone}</p>
+                                      </div>
+                                    </div>
+                                    <Separator />
+                                    <div>
+                                      <p className="text-sm font-medium text-muted-foreground mb-2">Message</p>
+                                      <div className="bg-muted/50 p-4 rounded-lg">
+                                        <p className="whitespace-pre-wrap">{selectedLead.message}</p>
+                                      </div>
+                                    </div>
+                                    {selectedLead.kind && (
+                                      <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Lead Type</p>
+                                        <Badge variant="outline">{selectedLead.kind}</Badge>
+                                      </div>
+                                    )}
+                                    <Separator />
+                                    <div className="text-xs text-muted-foreground">
+                                      <p>Lead ID: {selectedLead.id}</p>
+                                      <p>Created: {format(new Date(selectedLead.createdAt), "PPpp")}</p>
+                                      {selectedLead.capturedVia && <p>Captured via: {selectedLead.capturedVia}</p>}
+                                    </div>
+                                  </div>
+                                )}
+                              </DialogContent>
+                            </Dialog>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="services" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Services Management</CardTitle>
+                    <CardDescription>
+                      Manage all services, prices, and availability
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[600px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {services.map((service) => (
+                        <TableRow key={service.id}>
+                          <TableCell className="font-medium">{service.name}</TableCell>
+                          <TableCell>
+                            {categories.find(c => c.id === service.categoryId)?.name || "Unknown"}
+                          </TableCell>
+                          <TableCell>₹{service.basePriceInr}</TableCell>
+                          <TableCell>
+                            <Badge variant={service.active ? "default" : "secondary"}>
+                              {service.active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  <Edit className="w-4 h-4 mr-1" />
+                                  Edit
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Edit Service</DialogTitle>
+                                  <DialogDescription>
+                                    Update service details, pricing, and availability
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 p-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-sm font-medium">Service Name</label>
+                                      <Input defaultValue={service.name} className="mt-1" />
+                                    </div>
+                                    <div>
+                                      <label className="text-sm font-medium">Price (INR)</label>
+                                      <Input type="number" defaultValue={service.basePriceInr} className="mt-1" />
+                                    </div>
+                                    <div>
+                                      <label className="text-sm font-medium">ETA (Days)</label>
+                                      <Input type="number" defaultValue={service.etaDays} className="mt-1" />
+                                    </div>
+                                    <div>
+                                      <label className="text-sm font-medium">SKU</label>
+                                      <Input defaultValue={service.sku || ""} className="mt-1" />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">Summary</label>
+                                    <Input defaultValue={service.summary} className="mt-1" />
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">Long Description</label>
+                                    <textarea 
+                                      className="w-full min-h-[100px] p-2 border rounded-md" 
+                                      defaultValue={service.longDescription || ""}
+                                    />
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <input type="checkbox" defaultChecked={service.active} id={`active-${service.id}`} />
+                                    <label htmlFor={`active-${service.id}`} className="text-sm font-medium">
+                                      Active (visible to customers)
+                                    </label>
+                                  </div>
+                                  <div className="flex justify-end gap-2">
+                                    <Button variant="outline">Cancel</Button>
+                                    <Button>Save Changes</Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="categories" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Categories Management</CardTitle>
+                    <CardDescription>
+                      Manage service categories and their order
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead>Sort Order</TableHead>
+                      <TableHead>Services</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {categories.map((category) => (
+                      <TableRow key={category.id}>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell className="font-mono text-sm">{category.slug}</TableCell>
+                        <TableCell>{category.sortOrder || 0}</TableCell>
+                        <TableCell>
+                          {services.filter(s => s.categoryId === category.id).length} services
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </CardContent>
