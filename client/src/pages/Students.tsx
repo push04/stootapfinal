@@ -266,36 +266,36 @@ export default function Students() {
           initial="initial"
           animate="animate"
           variants={stagger}
-          className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-accent/5 to-background py-20 lg:py-32"
+          className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950 dark:via-purple-950 dark:to-pink-950 py-20 lg:py-32"
         >
-          <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25 dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0.5))]" />
+          <div className="absolute inset-0 bg-grid-slate-200 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/25 dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0.5))]" />
           <div className="mx-auto max-w-7xl px-4 lg:px-8 relative">
             <div className="text-center max-w-4xl mx-auto">
               <motion.div variants={fadeIn}>
-                <Badge className="mb-6 text-sm py-2 px-4">
+                <Badge className="mb-6 text-sm py-2 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
                   <GraduationCap className="mr-2 h-4 w-4" />
                   Student Entrepreneur Program
                 </Badge>
               </motion.div>
               <motion.h1 
                 variants={fadeIn}
-                className="text-5xl lg:text-7xl font-bold font-heading mb-6 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70"
+                className="text-5xl lg:text-7xl font-bold font-heading mb-6"
               >
-                Turn Your Ideas Into
-                <span className="block text-accent">Successful Startups</span>
+                <span className="text-gray-900 dark:text-gray-100">Turn Your Ideas Into</span>
+                <span className="block mt-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">Successful Startups</span>
               </motion.h1>
               <motion.p variants={fadeIn} className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
                 Access ₹50Cr+ in funding opportunities, expert guidance, and fast-track legal support designed specifically for student entrepreneurs
               </motion.p>
               <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link href="/services">
-                  <Button size="lg" className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
+                  <Button size="lg" className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                     <Rocket className="mr-2 h-5 w-5" />
                     Start Your Journey
                   </Button>
                 </Link>
                 <Link href="/contact">
-                  <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                  <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-purple-600 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950">
                     <Calendar className="mr-2 h-5 w-5" />
                     Book Free Consultation
                   </Button>
@@ -306,7 +306,7 @@ export default function Students() {
         </motion.div>
 
         {/* Stats Section */}
-        <section className="py-12 bg-muted/30">
+        <section className="py-12 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
               {stats.map((stat, index) => (
@@ -316,11 +316,11 @@ export default function Students() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="text-center"
+                  className="text-center text-white"
                 >
-                  <stat.icon className="h-8 w-8 text-accent mx-auto mb-3" />
+                  <stat.icon className="h-8 w-8 mx-auto mb-3 text-white/90" />
                   <div className="text-3xl lg:text-4xl font-bold mb-2">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
+                  <div className="text-sm text-white/80">{stat.label}</div>
                 </motion.div>
               ))}
             </div>
@@ -331,14 +331,14 @@ export default function Students() {
         <section className="py-16 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <Badge className="mb-4">
+              <Badge className="mb-4 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                 <Target className="mr-1 h-3 w-3" />
                 Your Roadmap
               </Badge>
-              <h2 className="text-4xl font-bold font-heading mb-4">
+              <h2 className="text-4xl font-bold font-heading mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 8-Week Startup Launch Plan
               </h2>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-lg text-gray-600 dark:text-gray-400">
                 From idea to launch - follow our proven roadmap designed for student entrepreneurs
               </p>
             </div>
@@ -386,14 +386,14 @@ export default function Students() {
         <section className="py-16 lg:py-24 bg-muted/30">
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-12">
-              <Badge className="mb-4">
+              <Badge className="mb-4 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
                 <IndianRupee className="mr-1 h-3 w-3" />
                 Funding
               </Badge>
-              <h2 className="text-4xl font-bold font-heading mb-4">
+              <h2 className="text-4xl font-bold font-heading mb-4 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
                 ₹50Cr+ in Funding Opportunities
               </h2>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-lg text-gray-600 dark:text-gray-400">
                 Access government grants, awards, and seed funding programs for student startups
               </p>
             </div>
