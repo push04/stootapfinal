@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
+import { supabase } from "@/lib/supabase-client";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -41,47 +42,29 @@ export default function Login() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(data),
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
       });
 
-      const result = await response.json();
+      if (error) throw error;
 
-      if (response.ok) {
+      if (authData.user) {
         toast({
           title: "Success!",
           description: "You have been logged in successfully.",
         });
         setLocation("/profile");
-      } else {
-        toast({
-          title: "Login Failed",
-          description: result.error || "Invalid email or password",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        title: "Login Failed",
+        description: error.message || "Invalid email or password",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleMagicLink = () => {
-    console.log("Magic link requested");
-    toast({
-      title: "Magic link sent!",
-      description: "Check your email for the login link.",
-    });
   };
 
   return (
@@ -151,25 +134,6 @@ export default function Login() {
                   data-testid="button-login"
                 >
                   {isSubmitting ? "Signing in..." : "Sign In"}
-                </Button>
-
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Or</span>
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleMagicLink}
-                  data-testid="button-magic-link"
-                >
-                  Send Magic Link
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground mt-6">

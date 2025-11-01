@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
+import { supabase } from "@/lib/supabase-client";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -61,40 +62,31 @@ export default function Register() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const { data: authData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.name,
+            phone: data.phone,
+            role: data.role,
+          },
         },
-        credentials: "include",
-        body: JSON.stringify({
-          fullName: data.name,
-          email: data.email,
-          phone: data.phone,
-          password: data.password,
-          role: data.role,
-        }),
       });
 
-      const result = await response.json();
+      if (error) throw error;
 
-      if (response.ok) {
+      if (authData.user) {
         toast({
           title: "Success!",
           description: "Your account has been created successfully.",
         });
         setLocation("/profile");
-      } else {
-        toast({
-          title: "Registration Failed",
-          description: result.error || "Failed to create account",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        title: "Registration Failed",
+        description: error.message || "Failed to create account",
         variant: "destructive",
       });
     } finally {

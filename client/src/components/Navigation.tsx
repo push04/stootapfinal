@@ -5,6 +5,7 @@ import { Moon, Sun, Menu, X, ShoppingCart, User } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCart } from "@/contexts/CartContext";
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase-client";
 
 export default function Navigation() {
   const { theme, toggleTheme } = useTheme();
@@ -16,13 +17,10 @@ export default function Navigation() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/api/me", {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
           setIsLoggedIn(true);
-          setUserName(data.fullName);
+          setUserName(session.user.user_metadata?.full_name || session.user.email || "User");
         } else {
           setIsLoggedIn(false);
         }
@@ -31,6 +29,21 @@ export default function Navigation() {
       }
     };
     checkAuth();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setIsLoggedIn(true);
+        setUserName(session.user.user_metadata?.full_name || session.user.email || "User");
+      } else {
+        setIsLoggedIn(false);
+        setUserName("");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

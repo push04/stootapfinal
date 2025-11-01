@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/lib/supabase-client";
 
 export default function Profile() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -32,35 +34,39 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const checkAuth = async () => {
       try {
-        const response = await fetch("/api/me", {
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
           setProfile({
-            id: data.id,
-            name: data.fullName,
-            email: data.email,
-            phone: data.phone || "",
-            role: data.role,
+            id: session.user.id,
+            name: session.user.user_metadata?.full_name || "",
+            email: session.user.email || "",
+            phone: session.user.user_metadata?.phone || "",
+            role: session.user.user_metadata?.role || "business",
           });
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
+          toast({
+            title: "Authentication Required",
+            description: "Please login or register first",
+            variant: "destructive",
+          });
+          setLocation("/login");
         }
       } catch (error) {
-        console.error("Failed to fetch profile:", error);
+        console.error("Failed to check auth:", error);
         setIsAuthenticated(false);
+        setLocation("/login");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProfile();
-  }, []);
+    checkAuth();
+  }, [toast, setLocation]);
 
   if (isLoading) {
     return (
@@ -109,21 +115,30 @@ export default function Profile() {
     );
   }
 
-  const handleSave = () => {
-    console.log("Saving profile:", profile);
-    toast({
-      title: "Success!",
-      description: "Your profile has been updated.",
-    });
-    setIsEditing(false);
-  };
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: profile.name,
+          phone: profile.phone,
+          role: profile.role,
+        },
+      });
 
-  const handleAvatarUpload = () => {
-    console.log("Upload avatar triggered");
-    toast({
-      title: "Upload started",
-      description: "Your profile picture is being uploaded.",
-    });
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Your profile has been updated.",
+      });
+      setIsEditing(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -150,16 +165,6 @@ export default function Profile() {
                   <Badge className="mb-4">
                     {profile.role === "student" ? "Student" : "Business Owner"}
                   </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={handleAvatarUpload}
-                    data-testid="button-upload-avatar"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Change Avatar
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -199,10 +204,10 @@ export default function Profile() {
                     id="email"
                     type="email"
                     value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                    disabled={!isEditing}
+                    disabled
                     data-testid="input-email"
                   />
+                  <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                 </div>
 
                 <div className="space-y-2">
@@ -234,38 +239,6 @@ export default function Profile() {
                       <SelectItem value="business">Business Owner</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-3">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="h-5 w-5" />
-                  Security
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">Password</p>
-                      <p className="text-sm text-muted-foreground">Last changed 30 days ago</p>
-                    </div>
-                    <Button variant="outline" data-testid="button-change-password">
-                      Change Password
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">Two-Factor Authentication</p>
-                      <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
-                    </div>
-                    <Button variant="outline" data-testid="button-enable-2fa">
-                      Enable
-                    </Button>
-                  </div>
                 </div>
               </CardContent>
             </Card>
