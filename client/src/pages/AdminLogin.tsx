@@ -22,15 +22,24 @@ export default function AdminLogin() {
     checkExistingAuth();
   }, []);
 
+  const getNextUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('next') || '/admin/dashboard';
+  };
+
   const checkExistingAuth = async () => {
-    const { session } = await getCurrentSession();
-    if (session) {
-      const adminStatus = await isAdmin();
-      if (adminStatus) {
-        setLocation("/admin");
-      } else {
-        setLocation("/profile");
+    try {
+      const response = await fetch("/api/admin/check", {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.isAdmin) {
+          setLocation(getNextUrl());
+        }
       }
+    } catch (err) {
+      // Not logged in, stay on login page
     }
   };
 
@@ -45,23 +54,27 @@ export default function AdminLogin() {
       return;
     }
 
-    // Check for hardcoded admin credentials first
-    if (email.toLowerCase() === "admin" && password === "@Stootap123") {
-      // Store admin session in sessionStorage for this session
-      sessionStorage.setItem("adminAuth", "true");
-      sessionStorage.setItem("adminUser", JSON.stringify({
-        email: "admin@stootap.com",
-        role: "admin",
-        name: "Admin User"
-      }));
-      
-      toast({
-        title: "Welcome back, Admin",
-        description: "You have been logged in successfully.",
+    // Try server-side admin login first (handles both hardcoded and Supabase)
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: email, password }),
+        credentials: "include", // Important: include cookies
       });
-      setLocation("/admin");
-      setLoading(false);
-      return;
+
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Welcome back, Admin",
+          description: "You have been logged in successfully.",
+        });
+        setLocation(getNextUrl());
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.error("Admin login failed:", err);
     }
 
     // Fall back to Supabase authentication
@@ -75,7 +88,7 @@ export default function AdminLogin() {
           title: "Welcome back, Admin",
           description: "You have been logged in successfully.",
         });
-        setLocation("/admin");
+        setLocation(getNextUrl());
       } else {
         toast({
           title: "Access Denied",

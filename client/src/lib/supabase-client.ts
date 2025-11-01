@@ -1,23 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Get environment variables with proper Vite prefixes
-const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
-
-// Fail fast if credentials are missing - no placeholders
-if (!supabaseUrl || !supabaseAnonKey) {
-  const errorMsg = `
-    ❌ CRITICAL: Missing Supabase credentials!
-    
-    Required environment variables:
-    - VITE_PUBLIC_SUPABASE_URL: ${supabaseUrl ? "✓" : "✗ MISSING"}
-    - VITE_PUBLIC_SUPABASE_ANON_KEY: ${supabaseAnonKey ? "✗ MISSING" : "✓"}
-    
-    Please ensure client/.env.development and client/.env.production files exist with valid credentials.
-  `;
-  console.error(errorMsg);
-  throw new Error("Missing Supabase credentials. Check console for details.");
-}
+// Get environment variables with proper Vite prefixes, fallback to in-repo credentials
+const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL || "https://nqpvacbctivuqzxqvxyk.supabase.co";
+const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xcHZhY2JjdGl2dXF6eHF2eHlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzAzOTkyNDMsImV4cCI6MjA0NTk3NTI0M30.VaF5k97SJxCjEhXwjZqy3jmQGcWuwuZRq21L0XM4UNs";
 
 // Create Supabase client for browser use with anon key
 export const supabase = createClient(
