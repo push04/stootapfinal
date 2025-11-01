@@ -758,6 +758,7 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
       const orders = await storage.getAllOrders();
       const leads = await storage.getAllLeads();
       const services = await storage.getAllServices();
+      const categories = await storage.getAllCategories();
       
       const totalRevenue = orders
         .filter(o => o.status === "completed")
@@ -765,21 +766,113 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
       
       const pendingOrders = orders.filter(o => o.status === "pending").length;
       const completedOrders = orders.filter(o => o.status === "completed").length;
+      const processingOrders = orders.filter(o => o.status === "processing").length;
+      const cancelledOrders = orders.filter(o => o.status === "cancelled").length;
+      
+      const now = new Date();
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      const ordersLast7Days = orders.filter(o => new Date(o.createdAt) >= last7Days);
+      const ordersLast30Days = orders.filter(o => new Date(o.createdAt) >= last30Days);
+      const leadsLast7Days = leads.filter(l => new Date(l.createdAt) >= last7Days);
+      const leadsLast30Days = leads.filter(l => new Date(l.createdAt) >= last30Days);
+      
+      const revenueLast7Days = ordersLast7Days
+        .filter(o => o.status === "completed")
+        .reduce((sum, o) => sum + parseFloat(o.totalInr.toString()), 0);
+      
+      const revenueLast30Days = ordersLast30Days
+        .filter(o => o.status === "completed")
+        .reduce((sum, o) => sum + parseFloat(o.totalInr.toString()), 0);
+      
+      const weeklyTrend = [];
+      for (let i = 6; i >= 0; i--) {
+        const dayStart = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        const dayOrders = orders.filter(o => {
+          const orderDate = new Date(o.createdAt);
+          return orderDate >= dayStart && orderDate <= dayEnd;
+        });
+        
+        const dayRevenue = dayOrders
+          .filter(o => o.status === "completed")
+          .reduce((sum, o) => sum + parseFloat(o.totalInr.toString()), 0);
+        
+        weeklyTrend.push({
+          date: dayStart.toISOString().split('T')[0],
+          name: dayStart.toLocaleDateString('en-US', { weekday: 'short' }),
+          orders: dayOrders.length,
+          revenue: parseFloat(dayRevenue.toFixed(2)),
+          leads: leads.filter(l => {
+            const leadDate = new Date(l.createdAt);
+            return leadDate >= dayStart && leadDate <= dayEnd;
+          }).length
+        });
+      }
+      
+      const servicePerformance = services.map(service => ({
+        serviceId: service.id,
+        serviceName: service.name,
+        categoryId: service.categoryId,
+        active: service.active,
+        basePriceInr: service.basePriceInr
+      }));
+      
+      const categoryStats = categories.map(cat => {
+        const catServices = services.filter(s => s.categoryId === cat.id);
+        return {
+          categoryId: cat.id,
+          categoryName: cat.name,
+          serviceCount: catServices.length,
+          activeServiceCount: catServices.filter(s => s.active).length
+        };
+      });
+      
+      const conversionRate = leads.length > 0 
+        ? ((orders.length / leads.length) * 100).toFixed(1)
+        : "0.0";
+      
+      const avgOrderValue = completedOrders > 0
+        ? (totalRevenue / completedOrders).toFixed(2)
+        : "0.00";
+      
+      const completionRate = orders.length > 0
+        ? ((completedOrders / orders.length) * 100).toFixed(1)
+        : "0.0";
       
       const analytics = {
         totalOrders: orders.length,
         pendingOrders,
         completedOrders,
+        processingOrders,
+        cancelledOrders,
         totalRevenue: totalRevenue.toFixed(2),
         totalLeads: leads.length,
         totalServices: services.length,
         activeServices: services.filter(s => s.active).length,
         recentOrders: orders.slice(0, 10),
         recentLeads: leads.slice(0, 10),
+        ordersLast7Days: ordersLast7Days.length,
+        ordersLast30Days: ordersLast30Days.length,
+        leadsLast7Days: leadsLast7Days.length,
+        leadsLast30Days: leadsLast30Days.length,
+        revenueLast7Days: revenueLast7Days.toFixed(2),
+        revenueLast30Days: revenueLast30Days.toFixed(2),
+        weeklyTrend,
+        servicePerformance,
+        categoryStats,
+        conversionRate,
+        avgOrderValue,
+        completionRate
       };
       
       res.json(analytics);
     } catch (error) {
+      console.error("Analytics error:", error);
       res.status(500).json({ error: "Failed to fetch analytics" });
     }
   });
