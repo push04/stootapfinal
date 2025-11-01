@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import Navigation from "@/components/Navigation";
+import { fetchWithAuth } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,7 +84,7 @@ export default function Profile() {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch("/api/me");
+      const response = await fetchWithAuth("/api/me");
       
       if (response.ok) {
         const data = await response.json();
@@ -115,7 +116,7 @@ export default function Profile() {
   const loadOrders = async () => {
     setOrdersLoading(true);
     try {
-      const response = await fetch("/api/me/orders");
+      const response = await fetchWithAuth("/api/me/orders");
       if (response.ok) {
         const data = await response.json();
         setOrders(data);
@@ -129,9 +130,8 @@ export default function Profile() {
 
   const handleUpdateProfile = async () => {
     try {
-      const response = await fetch("/api/me", {
+      const response = await fetchWithAuth("/api/me", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
       });
 
@@ -178,11 +178,9 @@ export default function Profile() {
 
     setChangingPassword(true);
     try {
-      const response = await fetch("/api/me/change-password", {
+      const response = await fetchWithAuth("/api/me/change-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword,
         }),
       });

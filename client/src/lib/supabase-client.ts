@@ -4,8 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 
-// For development: Use placeholder values if environment variables are not set
-// The backend handles all Supabase operations, so this is mainly for auth
+// Validate credentials are available
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Missing Supabase credentials. Authentication will not work.");
+  console.error("SUPABASE_URL:", supabaseUrl ? "✓" : "✗");
+  console.error("SUPABASE_ANON_KEY:", supabaseAnonKey ? "✓" : "✗");
+}
+
 const url = supabaseUrl || "https://placeholder.supabase.co";
 const key = supabaseAnonKey || "placeholder_key";
 
