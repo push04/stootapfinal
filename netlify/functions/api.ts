@@ -13,5 +13,5 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     });
   }
 
-  return cachedHandler(event, context);
+  return cachedHandler(event, context) as any;
 };

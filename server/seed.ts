@@ -1,5 +1,5 @@
 import { storage } from "./storage-db";
-import type { InsertCategory, InsertService } from "@shared/schema";
+import type { InsertCategory, InsertService, InsertSiteContent } from "@shared/schema";
 
 const categories: InsertCategory[] = [
   {
@@ -636,5 +636,156 @@ export async function seedDatabase() {
 
   await Promise.all(services.map((svc) => storage.createService(svc)));
 
+  // Seed site content
+  const siteContentItems: InsertSiteContent[] = [
+    {
+      key: "hero_title",
+      section: "hero",
+      label: "Hero Title",
+      value: "Your Entire Business, Handled.",
+      type: "text",
+      description: "Main headline on the homepage hero section",
+      sortOrder: 1,
+    },
+    {
+      key: "hero_subtitle",
+      section: "hero",
+      label: "Hero Subtitle",
+      value: "From idea to IMPACT. From concept to running brand. 300+ services. One platform.",
+      type: "textarea",
+      description: "Subtitle text on the homepage hero section",
+      sortOrder: 2,
+    },
+    {
+      key: "hero_cta_student",
+      section: "hero",
+      label: "Student CTA Button Text",
+      value: "Student? Get Started",
+      type: "text",
+      description: "Call-to-action button text for students",
+      sortOrder: 3,
+    },
+    {
+      key: "hero_cta_business",
+      section: "hero",
+      label: "Business CTA Button Text",
+      value: "Business? Explore Services",
+      type: "text",
+      description: "Call-to-action button text for businesses",
+      sortOrder: 4,
+    },
+    {
+      key: "hero_feature_1",
+      section: "hero",
+      label: "Feature 1",
+      value: "Secure payments via Razorpay",
+      type: "text",
+      description: "First feature highlight below hero",
+      sortOrder: 5,
+    },
+    {
+      key: "hero_feature_2",
+      section: "hero",
+      label: "Feature 2",
+      value: "India-first compliance",
+      type: "text",
+      description: "Second feature highlight below hero",
+      sortOrder: 6,
+    },
+    {
+      key: "hero_feature_3",
+      section: "hero",
+      label: "Feature 3",
+      value: "300+ verified services",
+      type: "text",
+      description: "Third feature highlight below hero",
+      sortOrder: 7,
+    },
+    {
+      key: "about_title",
+      section: "about",
+      label: "About Section Title",
+      value: "Why Stootap?",
+      type: "text",
+      description: "Title for the about/why choose us section",
+      sortOrder: 1,
+    },
+    {
+      key: "about_description",
+      section: "about",
+      label: "About Description",
+      value: "We simplify business operations for Indian entrepreneurs and students. From registration to compliance, marketing to operations - everything you need in one place.",
+      type: "textarea",
+      description: "Description for the about section",
+      sortOrder: 2,
+    },
+    {
+      key: "footer_company_name",
+      section: "footer",
+      label: "Company Name",
+      value: "Stootap",
+      type: "text",
+      description: "Company name displayed in footer",
+      sortOrder: 1,
+    },
+    {
+      key: "footer_tagline",
+      section: "footer",
+      label: "Footer Tagline",
+      value: "Empowering entrepreneurs across India",
+      type: "text",
+      description: "Tagline displayed in footer",
+      sortOrder: 2,
+    },
+    {
+      key: "footer_copyright",
+      section: "footer",
+      label: "Copyright Text",
+      value: "© 2025 Stootap. All rights reserved.",
+      type: "text",
+      description: "Copyright text in footer",
+      sortOrder: 3,
+    },
+    {
+      key: "services_title",
+      section: "services",
+      label: "Services Page Title",
+      value: "Our Services",
+      type: "text",
+      description: "Main title on services page",
+      sortOrder: 1,
+    },
+    {
+      key: "services_subtitle",
+      section: "services",
+      label: "Services Page Subtitle",
+      value: "Browse our complete catalog of business services",
+      type: "text",
+      description: "Subtitle on services page",
+      sortOrder: 2,
+    },
+    {
+      key: "contact_title",
+      section: "contact",
+      label: "Contact Page Title",
+      value: "Get In Touch",
+      type: "text",
+      description: "Title on contact page",
+      sortOrder: 1,
+    },
+    {
+      key: "contact_description",
+      section: "contact",
+      label: "Contact Description",
+      value: "Have questions? We're here to help. Fill out the form below and our team will get back to you within 24 hours.",
+      type: "textarea",
+      description: "Description on contact page",
+      sortOrder: 2,
+    },
+  ];
+
+  await Promise.all(siteContentItems.map((content) => storage.createSiteContent(content)));
+
   console.log(`✓ Seeded ${categories.length} categories and ${services.length} services`);
+  console.log(`✓ Seeded ${siteContentItems.length} site content items`);
 }

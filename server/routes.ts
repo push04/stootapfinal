@@ -815,6 +815,100 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     }
   });
 
+  // Site Content Management APIs
+  app.get("/api/site-content", async (_req, res) => {
+    try {
+      const content = await storage.getAllSiteContent();
+      res.json(content);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch site content" });
+    }
+  });
+
+  app.get("/api/site-content/section/:section", async (req, res) => {
+    try {
+      const content = await storage.getSiteContentBySection(req.params.section);
+      res.json(content);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch site content" });
+    }
+  });
+
+  app.get("/api/site-content/key/:key", async (req, res) => {
+    try {
+      const content = await storage.getSiteContentByKey(req.params.key);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+      res.json(content);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch site content" });
+    }
+  });
+
+  app.get("/api/admin/site-content", requireAdmin, async (_req, res) => {
+    try {
+      const content = await storage.getAllSiteContent();
+      res.json(content);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch site content" });
+    }
+  });
+
+  app.post("/api/admin/site-content", requireAdmin, async (req, res) => {
+    try {
+      const { insertSiteContentSchema } = await import("@shared/schema");
+      const validated = insertSiteContentSchema.parse(req.body);
+      const content = await storage.createSiteContent(validated);
+      res.json(content);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create site content" });
+    }
+  });
+
+  app.patch("/api/admin/site-content/:id", requireAdmin, async (req, res) => {
+    try {
+      const content = await storage.updateSiteContent(req.params.id, req.body);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+      res.json(content);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update site content" });
+    }
+  });
+
+  app.patch("/api/admin/site-content/key/:key", requireAdmin, async (req, res) => {
+    try {
+      const { value } = req.body;
+      if (!value) {
+        return res.status(400).json({ error: "Value is required" });
+      }
+      const content = await storage.updateSiteContentByKey(req.params.key, value);
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+      res.json(content);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update site content" });
+    }
+  });
+
+  app.delete("/api/admin/site-content/:id", requireAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteSiteContent(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete site content" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

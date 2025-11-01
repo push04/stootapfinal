@@ -16,6 +16,7 @@ import {
   auditLogs,
   subscriptionPlans,
   userSubscriptions,
+  siteContent,
   type Profile,
   type InsertProfile,
   type Category,
@@ -46,6 +47,8 @@ import {
   type InsertSubscriptionPlan,
   type UserSubscription,
   type InsertUserSubscription,
+  type SiteContent,
+  type InsertSiteContent,
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
@@ -344,6 +347,41 @@ export class DatabaseStorage implements IStorage {
   async updateUserSubscription(id: string, updates: Partial<InsertUserSubscription>): Promise<UserSubscription | undefined> {
     const result = await db.update(userSubscriptions).set(updates).where(eq(userSubscriptions.id, id)).returning();
     return result[0];
+  }
+
+  async getAllSiteContent(): Promise<SiteContent[]> {
+    return await db.select().from(siteContent).orderBy(siteContent.section, siteContent.sortOrder);
+  }
+
+  async getSiteContentBySection(section: string): Promise<SiteContent[]> {
+    return await db.select().from(siteContent).where(eq(siteContent.section, section)).orderBy(siteContent.sortOrder);
+  }
+
+  async getSiteContentByKey(key: string): Promise<SiteContent | undefined> {
+    const result = await db.select().from(siteContent).where(eq(siteContent.key, key)).limit(1);
+    return result[0];
+  }
+
+  async createSiteContent(content: InsertSiteContent): Promise<SiteContent> {
+    const result = await db.insert(siteContent).values(content).returning();
+    return result[0];
+  }
+
+  async updateSiteContent(id: string, updates: Partial<InsertSiteContent>): Promise<SiteContent | undefined> {
+    const updated = { ...updates, updatedAt: new Date() };
+    const result = await db.update(siteContent).set(updated).where(eq(siteContent.id, id)).returning();
+    return result[0];
+  }
+
+  async updateSiteContentByKey(key: string, value: string): Promise<SiteContent | undefined> {
+    const updated = { value, updatedAt: new Date() };
+    const result = await db.update(siteContent).set(updated).where(eq(siteContent.key, key)).returning();
+    return result[0];
+  }
+
+  async deleteSiteContent(id: string): Promise<boolean> {
+    const result = await db.delete(siteContent).where(eq(siteContent.id, id)).returning();
+    return result.length > 0;
   }
 }
 
