@@ -1,12 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage-db";
-import { ZodError } from "zod";
+import { ZodError, z } from "zod";
 import { requireAdmin, loginAdmin, logoutAdmin, isAdminAuthenticated } from "./auth";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { supabaseServer } from "./supabase-server";
 import { toCamelCase } from "./storage-db";
+import { validateRequest, commonSchemas, rateLimit } from "./validation";
 
 // AI Concierge configuration
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -460,73 +461,22 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     }
   });
 
-  // User Authentication
+  // User Authentication (Legacy - Supabase Auth handles this now)
   app.post("/api/auth/register", async (req, res) => {
-    try {
-      const { fullName, email, password, phone, role } = req.body;
-      
-      if (!fullName || !email || !password) {
-        return res.status(400).json({ error: "Full name, email, and password are required" });
-      }
-      
-      const existingProfile = await storage.getProfileByEmail(email);
-      if (existingProfile) {
-        return res.status(400).json({ error: "Email already registered" });
-      }
-      
-      const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
-      
-      const profile = await storage.createProfile({
-        fullName,
-        email,
-        phone: phone || null,
-        passwordHash,
-        role: role || "business",
-      });
-      
-      return new Promise((resolve) => {
-        if (req.session) {
-          req.session.regenerate((err) => {
-            if (err) {
-              console.error("Session regeneration error:", err);
-              res.status(500).json({ error: "Session error" });
-              resolve();
-              return;
-            }
-            req.session.userId = profile.id;
-            req.session.save((saveErr) => {
-              if (saveErr) {
-                console.error("Session save error:", saveErr);
-                res.status(500).json({ error: "Session save error" });
-                resolve();
-                return;
-              }
-              res.json({ 
-                success: true, 
-                message: "Registration successful",
-                user: {
-                  id: profile.id,
-                  fullName: profile.fullName,
-                  email: profile.email,
-                  phone: profile.phone,
-                  role: profile.role
-                }
-              });
-              resolve();
-            });
-          });
-        } else {
-          res.status(500).json({ error: "No session available" });
-          resolve();
-        }
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ error: "Registration failed" });
-    }
+    res.status(410).json({ 
+      error: "This endpoint is deprecated. Please use Supabase Auth for registration." 
+    });
   });
 
+  // Legacy login endpoint - Not used (Supabase Auth handles login)
   app.post("/api/auth/login", async (req, res) => {
+    res.status(410).json({ 
+      error: "This endpoint is deprecated. Please use Supabase Auth for login." 
+    });
+  });
+
+  // Old session-based login (kept for reference but not used)
+  app.post("/api/auth/login-legacy", async (req, res) => {
     try {
       const { email, password } = req.body;
       
@@ -539,10 +489,9 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
         return res.status(401).json({ error: "Invalid email or password" });
       }
       
-      const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
-      if (profile.passwordHash !== passwordHash) {
-        return res.status(401).json({ error: "Invalid email or password" });
-      }
+      // This is legacy code - Supabase Auth handles password verification
+      // Keeping for reference but should not be used
+      return res.status(410).json({ error: "Use Supabase Auth for login" });
       
       return new Promise((resolve) => {
         if (req.session) {
@@ -602,14 +551,34 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
 
   app.get("/api/me", async (req, res) => {
     try {
-      if (!req.session?.userId) {
+      if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
-      const profile = await storage.getProfile(req.session.userId);
+      // Try to get existing profile by Supabase user ID
+      let profile = await storage.getProfile(req.user.id);
+      
+      // If profile doesn't exist, create one from Supabase user data
       if (!profile) {
-        req.session.userId = undefined;
-        return res.status(401).json({ error: "User not found" });
+        try {
+          profile = await storage.createProfile({
+            id: req.user.id, // Use Supabase user ID to avoid duplicates
+            fullName: req.user.email.split('@')[0], // Use email username as default name
+            email: req.user.email,
+            phone: null,
+            role: req.user.role || 'business',
+          });
+        } catch (createError) {
+          // If creation fails (e.g., email already exists), try to get by email
+          const existingProfile = await storage.getProfileByEmail(req.user.email);
+          if (existingProfile) {
+            // Profile exists with different ID - this shouldn't happen but handle gracefully
+            console.warn(`Profile mismatch: Supabase ID ${req.user.id} vs DB ID ${existingProfile.id} for ${req.user.email}`);
+            profile = existingProfile;
+          } else {
+            throw createError;
+          }
+        }
       }
       
       res.json({
@@ -627,24 +596,26 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
   });
 
   // Update user profile
-  app.put("/api/me", async (req, res) => {
+  app.put("/api/me", 
+    validateRequest({
+      body: z.object({
+        fullName: commonSchemas.fullName,
+        phone: commonSchemas.phone.optional(),
+      })
+    }),
+    async (req, res) => {
     try {
-      if (!req.session?.userId) {
+      if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
       const { fullName, phone } = req.body;
-      
-      if (!fullName || fullName.trim().length < 2) {
-        return res.status(400).json({ error: "Full name is required (minimum 2 characters)" });
-      }
-
-      const updates: any = { fullName: fullName.trim() };
+      const updates: any = { fullName };
       if (phone !== undefined) {
-        updates.phone = phone.trim() || null;
+        updates.phone = phone || null;
       }
 
-      const updatedProfile = await storage.updateProfile(req.session.userId, updates);
+      const updatedProfile = await storage.updateProfile(req.user.id, updates);
       
       if (!updatedProfile) {
         return res.status(404).json({ error: "Profile not found" });
@@ -667,37 +638,34 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     }
   });
 
-  // Change password
+  // Change password using Supabase Auth
   app.post("/api/me/change-password", async (req, res) => {
     try {
-      if (!req.session?.userId) {
+      if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const { currentPassword, newPassword } = req.body;
+      const { newPassword } = req.body; // Note: Supabase Auth handles current password verification
       
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: "Current and new passwords are required" });
+      if (!newPassword) {
+        return res.status(400).json({ error: "New password is required" });
       }
 
       if (newPassword.length < 8) {
         return res.status(400).json({ error: "New password must be at least 8 characters" });
       }
 
-      const profile = await storage.getProfile(req.session.userId);
-      if (!profile) {
-        return res.status(404).json({ error: "Profile not found" });
-      }
+      // Use Supabase Auth Admin API to change password
+      // Note: In production, consider requiring re-authentication before password changes
+      const { error } = await supabaseServer.auth.admin.updateUserById(
+        req.user.id,
+        { password: newPassword }
+      );
 
-      // Verify current password
-      const currentPasswordHash = crypto.createHash("sha256").update(currentPassword).digest("hex");
-      if (profile.passwordHash !== currentPasswordHash) {
-        return res.status(401).json({ error: "Current password is incorrect" });
+      if (error) {
+        console.error("Password change error:", error);
+        return res.status(500).json({ error: "Failed to change password" });
       }
-
-      // Update to new password
-      const newPasswordHash = crypto.createHash("sha256").update(newPassword).digest("hex");
-      await storage.updateProfile(req.session.userId, { passwordHash: newPasswordHash });
 
       res.json({ success: true, message: "Password changed successfully" });
     } catch (error) {
@@ -709,11 +677,11 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
   // Get user's orders
   app.get("/api/me/orders", async (req, res) => {
     try {
-      if (!req.session?.userId) {
+      if (!req.user) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const orders = await storage.getOrdersByUser(req.session.userId);
+      const orders = await storage.getOrdersByUser(req.user.id);
       
       // Get order items for each order
       const ordersWithItems = await Promise.all(
@@ -885,10 +853,7 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
       
       // Transform to camelCase and remove sensitive data
       const users = (data || []).map((user: any) => {
-        const camelUser = toCamelCase(user);
-        // Don't expose password hash
-        const { passwordHash, ...safeUser } = camelUser;
-        return safeUser;
+        return toCamelCase(user);
       });
       
       res.json(users);

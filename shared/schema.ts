@@ -8,7 +8,6 @@ export const profiles = pgTable("profiles", {
   fullName: text("full_name").notNull(),
   email: text("email").notNull().unique(),
   phone: text("phone"),
-  passwordHash: text("password_hash").notNull(),
   role: text("role").notNull().default("business"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { createServer, type Server } from "http";
 import cookieParser from "cookie-parser";
+import { authenticateSupabaseUser } from "./auth-middleware";
 
 declare module 'http' {
   interface IncomingMessage {
@@ -19,12 +20,25 @@ export async function createExpressApp(): Promise<{ app: express.Express; server
   // Use cookie-parser for stateless auth (no DB-backed sessions)
   app.use(cookieParser(process.env.SESSION_SECRET || "dev-secret-change-in-production"));
 
+  // Security headers
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
+
   app.use(express.json({
+    limit: '10mb', // Limit request body size
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     }
   }));
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+  
+  // Add Supabase authentication middleware
+  app.use(authenticateSupabaseUser);
 
   app.use((req, res, next) => {
     const start = Date.now();

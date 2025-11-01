@@ -5,13 +5,12 @@
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Profiles table
+-- Profiles table (passwords managed by Supabase Auth)
 CREATE TABLE "profiles" (
         "id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
         "full_name" text NOT NULL,
         "email" text NOT NULL,
         "phone" text,
-        "password_hash" text NOT NULL,
         "role" text DEFAULT 'business' NOT NULL,
         "created_at" timestamp DEFAULT now() NOT NULL,
         CONSTRAINT "profiles_email_unique" UNIQUE("email")

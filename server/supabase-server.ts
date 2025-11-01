@@ -16,19 +16,14 @@ function getSupabaseUrl(): string {
 function getServiceRoleKey(): string {
   // Try service role key first, fall back to anon key if not available
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+              process.env.SUPABASE_ANON_KEY ||
               process.env.VITE_PUBLIC_SUPABASE_ANON_KEY ||
               process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!key) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY or VITE_PUBLIC_SUPABASE_ANON_KEY environment variable is required");
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY environment variable is required");
   }
-  if (key.length < 20) {
-    console.warn("⚠️  WARNING: Service role key appears invalid. Attempting to use anon key.");
-    const anonKey = process.env.VITE_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!anonKey) {
-      throw new Error("No valid Supabase key found");
-    }
-    return anonKey;
-  }
+  
+  // Use the key as-is (works for both service role and anon key)
   return key;
 }
 
