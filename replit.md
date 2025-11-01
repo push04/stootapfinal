@@ -23,20 +23,41 @@ Stootap is a comprehensive business services platform designed to help students 
 - Fixed TypeScript type declarations for Buffer in rawBody
 - Verified build artifacts: dist/public (frontend) and netlify-functions-build (serverless functions)
 - Created comprehensive deployment guide: `REPLIT_TO_NETLIFY_GUIDE.md`
+- **Fixed netlify.toml:** Added SPA fallback redirect (`/*` → `/index.html`) to handle client-side routes on refresh
+- Removed redundant Razorpay webhook redirect (webhook handled by main API function at `/api/payment/webhook`)
+
+### User Authentication Implementation
+- **Added passwordHash field** to profiles schema for secure credential storage
+- **Implemented authentication endpoints:**
+  - `POST /api/auth/register` - Creates user profile and stores password hash
+  - `POST /api/auth/login` - Verifies credentials and establishes session
+  - `POST /api/auth/logout` - Clears user session
+  - `GET /api/me` - Returns current user profile (401 if not authenticated)
+- **Fixed Login.tsx and Register.tsx:** Updated to use `useLocation` from wouter for proper navigation, redirect to `/profile` after success
+- **Created protected Profile.tsx:** Fetches `/api/me`, shows auth prompt if not logged in, displays user data when authenticated
+- Password hashing uses SHA-256 (matches existing admin auth pattern; consider upgrading to bcrypt/argon2 for production)
 
 ### API Keys and Secrets
 - RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET configured for payment processing
 - OPENROUTER_API_KEY configured for AI concierge functionality using DeepSeek model
 - DATABASE_URL configured for PostgreSQL database connection
+- SESSION_SECRET required for production deployment (Netlify environment variable)
 - All secrets properly stored in Replit environment variables
 
 ### Verified Functionality
-- All major pages loading correctly: Home, Services, Login, Register, Admin Login
-- API endpoints tested and working: Categories, Services, Cart, Payment, AI Concierge
+- All major pages loading correctly: Home, Services, Login, Register, Admin Login, Profile
+- API endpoints tested and working: Categories, Services, Cart, Payment, AI Concierge, User Auth
 - Admin dashboard with authentication protection (redirects to login when not authenticated)
+- User registration and login flows working with session management
+- Protected profile route shows login prompt when not authenticated
 - Vite development server with HMR running on port 5000 with proxy support
 - Frontend configured with `allowedHosts: true` for Replit preview proxy
 - Database successfully seeded with sample data
+
+### Known Limitations
+- Password hashing uses SHA-256 without salt (matches admin auth pattern). For production, upgrade to bcrypt or argon2 for better security
+- No rate limiting on login attempts (should add for production)
+- No email verification flow (registration is immediate)
 
 ## User Preferences
 

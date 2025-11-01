@@ -18,12 +18,12 @@
   status = 200
   force = true
 
-# Razorpay webhook endpoint
+# SPA fallback - serve index.html for all non-API routes
+# This must be last to allow API redirects to take precedence
 [[redirects]]
-  from = "/api/payment/webhook"
-  to = "/.netlify/functions/razorpay-webhook"
+  from = "/*"
+  to = "/index.html"
   status = 200
-  force = true
 
 # Security headers for all pages
 [[headers]]
