@@ -5,6 +5,8 @@ import { ZodError } from "zod";
 import { requireAdmin, loginAdmin, logoutAdmin, isAdminAuthenticated } from "./auth";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { supabaseServer } from "./supabase-server";
+import { toCamelCase } from "./storage-db";
 
 // AI Concierge configuration
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -371,6 +373,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Messages array required" });
       }
 
+      // Validate messages array structure and length
+      if (messages.length === 0 || messages.length > 50) {
+        return res.status(400).json({ error: "Invalid messages count (1-50 allowed)" });
+      }
+
+      // Validate each message has required structure
+      const invalidMessage = messages.find(m => !m.role || !m.content || typeof m.content !== 'string');
+      if (invalidMessage) {
+        return res.status(400).json({ error: "Invalid message format" });
+      }
+
+      // Validate user role
+      if (userRole && !['business', 'student'].includes(userRole)) {
+        return res.status(400).json({ error: "Invalid user role" });
+      }
+
       if (!OPENROUTER_API_KEY) {
         return res.status(500).json({ error: "OpenRouter API key not configured" });
       }
@@ -608,6 +626,110 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     }
   });
 
+  // Update user profile
+  app.put("/api/me", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { fullName, phone } = req.body;
+      
+      if (!fullName || fullName.trim().length < 2) {
+        return res.status(400).json({ error: "Full name is required (minimum 2 characters)" });
+      }
+
+      const updates: any = { fullName: fullName.trim() };
+      if (phone !== undefined) {
+        updates.phone = phone.trim() || null;
+      }
+
+      const updatedProfile = await storage.updateProfile(req.session.userId, updates);
+      
+      if (!updatedProfile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      res.json({
+        success: true,
+        message: "Profile updated successfully",
+        user: {
+          id: updatedProfile.id,
+          fullName: updatedProfile.fullName,
+          email: updatedProfile.email,
+          phone: updatedProfile.phone,
+          role: updatedProfile.role
+        }
+      });
+    } catch (error) {
+      console.error("Update profile error:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  // Change password
+  app.post("/api/me/change-password", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current and new passwords are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "New password must be at least 8 characters" });
+      }
+
+      const profile = await storage.getProfile(req.session.userId);
+      if (!profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      // Verify current password
+      const currentPasswordHash = crypto.createHash("sha256").update(currentPassword).digest("hex");
+      if (profile.passwordHash !== currentPasswordHash) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      // Update to new password
+      const newPasswordHash = crypto.createHash("sha256").update(newPassword).digest("hex");
+      await storage.updateProfile(req.session.userId, { passwordHash: newPasswordHash });
+
+      res.json({ success: true, message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Change password error:", error);
+      res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+
+  // Get user's orders
+  app.get("/api/me/orders", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const orders = await storage.getOrdersByUser(req.session.userId);
+      
+      // Get order items for each order
+      const ordersWithItems = await Promise.all(
+        orders.map(async (order) => {
+          const items = await storage.getOrderItemsByOrderId(order.id);
+          return { ...order, items };
+        })
+      );
+
+      res.json(ordersWithItems);
+    } catch (error) {
+      console.error("Get user orders error:", error);
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
   // Admin Authentication
   app.post("/api/admin/login", async (req, res) => {
     try {
@@ -636,6 +758,30 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
 
   app.get("/api/admin/check", (req, res) => {
     res.json({ isAdmin: isAdminAuthenticated(req) });
+  });
+
+  // Admin Integration Status Check
+  app.get("/api/admin/integration-status", requireAdmin, async (_req, res) => {
+    try {
+      const status = {
+        razorpay: {
+          configured: !!(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET),
+          error: !(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) ? "Razorpay keys not configured" : null,
+        },
+        openrouter: {
+          configured: !!OPENROUTER_API_KEY,
+          error: !OPENROUTER_API_KEY ? "OpenRouter API key not configured" : null,
+        },
+        supabase: {
+          configured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+          error: !(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) ? "Supabase credentials not configured" : null,
+        },
+      };
+      
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check integration status" });
+    }
   });
 
   // Admin Dashboard APIs
@@ -725,6 +871,30 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
       res.json(leads);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch leads" });
+    }
+  });
+
+  // Get all registered users
+  app.get("/api/admin/users", requireAdmin, async (_req, res) => {
+    try {
+      // We'll need to add this method to storage
+      const { data } = await supabaseServer
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      // Transform to camelCase and remove sensitive data
+      const users = (data || []).map((user: any) => {
+        const camelUser = toCamelCase(user);
+        // Don't expose password hash
+        const { passwordHash, ...safeUser } = camelUser;
+        return safeUser;
+      });
+      
+      res.json(users);
+    } catch (error) {
+      console.error("Get users error:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
     }
   });
 

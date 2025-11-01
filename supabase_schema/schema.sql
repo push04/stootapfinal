@@ -11,6 +11,7 @@ CREATE TABLE "profiles" (
         "full_name" text NOT NULL,
         "email" text NOT NULL,
         "phone" text,
+        "password_hash" text NOT NULL,
         "role" text DEFAULT 'business' NOT NULL,
         "created_at" timestamp DEFAULT now() NOT NULL,
         CONSTRAINT "profiles_email_unique" UNIQUE("email")
@@ -212,6 +213,21 @@ CREATE TABLE "user_subscriptions" (
         "created_at" timestamp DEFAULT now() NOT NULL
 );
 
+-- Site Content table
+CREATE TABLE "site_content" (
+        "id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+        "key" text NOT NULL,
+        "section" text NOT NULL,
+        "label" text NOT NULL,
+        "value" text NOT NULL,
+        "type" text DEFAULT 'text' NOT NULL,
+        "description" text,
+        "sort_order" integer DEFAULT 0,
+        "updated_at" timestamp DEFAULT now() NOT NULL,
+        "created_at" timestamp DEFAULT now() NOT NULL,
+        CONSTRAINT "site_content_key_unique" UNIQUE("key")
+);
+
 -- Add foreign key constraints for data integrity
 ALTER TABLE services
   ADD CONSTRAINT services_category_id_fkey 
@@ -281,6 +297,7 @@ COMMENT ON TABLE tickets IS 'Customer support tickets';
 COMMENT ON TABLE audit_logs IS 'System audit trail for compliance';
 COMMENT ON TABLE subscription_plans IS 'Available subscription tiers';
 COMMENT ON TABLE user_subscriptions IS 'Active user subscriptions';
+COMMENT ON TABLE site_content IS 'Editable site content for dynamic pages';
 
 -- ============================================
 -- SEED DATA: Initial Categories and Services

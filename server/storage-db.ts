@@ -35,6 +35,32 @@ import type {
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
+export function toCamelCase(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(toCamelCase);
+  if (typeof obj !== 'object') return obj;
+
+  const newObj: any = {};
+  for (const key in obj) {
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    newObj[camelKey] = toCamelCase(obj[key]);
+  }
+  return newObj;
+}
+
+export function toSnakeCase(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(toSnakeCase);
+  if (typeof obj !== 'object') return obj;
+
+  const newObj: any = {};
+  for (const key in obj) {
+    const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+    newObj[snakeKey] = toSnakeCase(obj[key]);
+  }
+  return newObj;
+}
+
 export class DatabaseStorage implements IStorage {
   async getProfile(id: string): Promise<Profile | undefined> {
     const { data } = await supabaseServer
@@ -42,7 +68,7 @@ export class DatabaseStorage implements IStorage {
       .select("*")
       .eq("id", id)
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async getProfileByEmail(email: string): Promise<Profile | undefined> {
@@ -51,27 +77,29 @@ export class DatabaseStorage implements IStorage {
       .select("*")
       .eq("email", email)
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async createProfile(profile: InsertProfile): Promise<Profile> {
+    const snakeCaseProfile = toSnakeCase(profile);
     const { data, error } = await supabaseServer
       .from("profiles")
-      .insert(profile)
+      .insert(snakeCaseProfile)
       .select()
       .single();
     if (error) throw new Error(`Failed to create profile: ${error.message}`);
-    return data;
+    return toCamelCase(data);
   }
 
   async updateProfile(id: string, updates: Partial<InsertProfile>): Promise<Profile | undefined> {
+    const snakeCaseUpdates = toSnakeCase(updates);
     const { data } = await supabaseServer
       .from("profiles")
-      .update(updates)
+      .update(snakeCaseUpdates)
       .eq("id", id)
       .select()
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async getAllCategories(): Promise<Category[]> {
@@ -79,7 +107,7 @@ export class DatabaseStorage implements IStorage {
       .from("categories")
       .select("*")
       .order("sort_order", { ascending: true });
-    return data || [];
+    return toCamelCase(data) || [];
   }
 
   async getCategoryBySlug(slug: string): Promise<Category | undefined> {
@@ -88,27 +116,29 @@ export class DatabaseStorage implements IStorage {
       .select("*")
       .eq("slug", slug)
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
+    const snakeCaseCategory = toSnakeCase(category);
     const { data, error } = await supabaseServer
       .from("categories")
-      .insert(category)
+      .insert(snakeCaseCategory)
       .select()
       .single();
     if (error) throw new Error(`Failed to create category: ${error.message}`);
-    return data;
+    return toCamelCase(data);
   }
 
   async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
+    const snakeCaseUpdates = toSnakeCase(updates);
     const { data } = await supabaseServer
       .from("categories")
-      .update(updates)
+      .update(snakeCaseUpdates)
       .eq("id", id)
       .select()
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async deleteCategory(id: string): Promise<boolean> {
@@ -127,7 +157,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     const { data } = await query;
-    return data || [];
+    return toCamelCase(data) || [];
   }
 
   async getServicesByCategory(categoryId: string): Promise<Service[]> {
@@ -135,7 +165,7 @@ export class DatabaseStorage implements IStorage {
       .from("services")
       .select("*")
       .eq("category_id", categoryId);
-    return data || [];
+    return toCamelCase(data) || [];
   }
 
   async getService(id: string): Promise<Service | undefined> {
@@ -144,7 +174,7 @@ export class DatabaseStorage implements IStorage {
       .select("*")
       .eq("id", id)
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async getServiceBySlug(slug: string): Promise<Service | undefined> {
@@ -153,27 +183,29 @@ export class DatabaseStorage implements IStorage {
       .select("*")
       .eq("slug", slug)
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async createService(service: InsertService): Promise<Service> {
+    const snakeCaseService = toSnakeCase(service);
     const { data, error } = await supabaseServer
       .from("services")
-      .insert(service)
+      .insert(snakeCaseService)
       .select()
       .single();
     if (error) throw new Error(`Failed to create service: ${error.message}`);
-    return data;
+    return toCamelCase(data);
   }
 
   async updateService(id: string, updates: Partial<InsertService>): Promise<Service | undefined> {
+    const snakeCaseUpdates = toSnakeCase(updates);
     const { data } = await supabaseServer
       .from("services")
-      .update(updates)
+      .update(snakeCaseUpdates)
       .eq("id", id)
       .select()
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async deleteService(id: string): Promise<boolean> {
@@ -190,7 +222,7 @@ export class DatabaseStorage implements IStorage {
       .select("*")
       .eq("id", id)
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async getOrdersBySession(sessionId: string): Promise<Order[]> {
@@ -199,7 +231,7 @@ export class DatabaseStorage implements IStorage {
       .select("*")
       .eq("session_id", sessionId)
       .order("created_at", { ascending: false });
-    return data || [];
+    return toCamelCase(data) || [];
   }
 
   async getOrdersByUser(userId: string): Promise<Order[]> {
@@ -208,35 +240,37 @@ export class DatabaseStorage implements IStorage {
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
-    return data || [];
+    return toCamelCase(data) || [];
   }
 
   async getAllOrders(): Promise<Order[]> {
     const { data } = await supabaseServer
       .from("orders")
       .select("*")
-      .order("created_at", { ascending: false });
-    return data || [];
+      .order("created_at", { ascending: false});
+    return toCamelCase(data) || [];
   }
 
   async createOrder(order: InsertOrder): Promise<Order> {
+    const snakeCaseOrder = toSnakeCase(order);
     const { data, error } = await supabaseServer
       .from("orders")
-      .insert(order)
+      .insert(snakeCaseOrder)
       .select()
       .single();
     if (error) throw new Error(`Failed to create order: ${error.message}`);
-    return data;
+    return toCamelCase(data);
   }
 
   async updateOrder(id: string, updates: Partial<InsertOrder>): Promise<Order | undefined> {
+    const snakeCaseUpdates = toSnakeCase(updates);
     const { data } = await supabaseServer
       .from("orders")
-      .update(updates)
+      .update(snakeCaseUpdates)
       .eq("id", id)
       .select()
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async getOrderItemsByOrderId(orderId: string): Promise<OrderItem[]> {
@@ -244,27 +278,29 @@ export class DatabaseStorage implements IStorage {
       .from("order_items")
       .select("*")
       .eq("order_id", orderId);
-    return data || [];
+    return toCamelCase(data) || [];
   }
 
   async createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem> {
+    const snakeCaseOrderItem = toSnakeCase(orderItem);
     const { data, error } = await supabaseServer
       .from("order_items")
-      .insert(orderItem)
+      .insert(snakeCaseOrderItem)
       .select()
       .single();
     if (error) throw new Error(`Failed to create order item: ${error.message}`);
-    return data;
+    return toCamelCase(data);
   }
 
   async createLead(lead: InsertLead): Promise<Lead> {
+    const snakeCaseLead = toSnakeCase(lead);
     const { data, error } = await supabaseServer
       .from("leads")
-      .insert(lead)
+      .insert(snakeCaseLead)
       .select()
       .single();
     if (error) throw new Error(`Failed to create lead: ${error.message}`);
-    return data;
+    return toCamelCase(data);
   }
 
   async getAllLeads(): Promise<Lead[]> {
@@ -272,7 +308,7 @@ export class DatabaseStorage implements IStorage {
       .from("leads")
       .select("*")
       .order("created_at", { ascending: false });
-    return data || [];
+    return toCamelCase(data) || [];
   }
 
   async getCartItemsBySession(sessionId: string): Promise<CartItem[]> {
@@ -280,38 +316,40 @@ export class DatabaseStorage implements IStorage {
       .from("cart_items")
       .select("*")
       .eq("session_id", sessionId);
-    return data || [];
+    return toCamelCase(data) || [];
   }
 
   async addToCart(cartItem: InsertCartItem): Promise<CartItem> {
+    const snakeCaseCartItem = toSnakeCase(cartItem);
+    
     // Check if item already exists in cart
     const { data: existing } = await supabaseServer
       .from("cart_items")
       .select("*")
-      .eq("session_id", cartItem.sessionId)
-      .eq("service_id", cartItem.serviceId)
+      .eq("session_id", snakeCaseCartItem.session_id)
+      .eq("service_id", snakeCaseCartItem.service_id)
       .single();
 
     if (existing) {
       // Update quantity if exists
       const { data, error } = await supabaseServer
         .from("cart_items")
-        .update({ qty: existing.qty + (cartItem.qty ?? 1) })
+        .update({ qty: existing.qty + (snakeCaseCartItem.qty ?? 1) })
         .eq("id", existing.id)
         .select()
         .single();
       if (error) throw new Error(`Failed to update cart: ${error.message}`);
-      return data;
+      return toCamelCase(data);
     }
 
     // Insert new cart item
     const { data, error } = await supabaseServer
       .from("cart_items")
-      .insert(cartItem)
+      .insert(snakeCaseCartItem)
       .select()
       .single();
     if (error) throw new Error(`Failed to add to cart: ${error.message}`);
-    return data;
+    return toCamelCase(data);
   }
 
   async updateCartItemQty(id: string, qty: number): Promise<CartItem | undefined> {
@@ -321,7 +359,7 @@ export class DatabaseStorage implements IStorage {
       .eq("id", id)
       .select()
       .single();
-    return data || undefined;
+    return toCamelCase(data) || undefined;
   }
 
   async removeFromCart(id: string): Promise<boolean> {

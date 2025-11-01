@@ -3,27 +3,12 @@ import crypto from "crypto";
 import signature from "cookie-signature";
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-
-// Default hash for password "@Stootap123"
-const DEFAULT_ADMIN_PASSWORD_HASH = "6e20e7f929a8745bea430809f10fce69fc53f0385291d4a76c56a817984426d7";
-
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || DEFAULT_ADMIN_PASSWORD_HASH;
-
-if (!process.env.ADMIN_PASSWORD_HASH && process.env.NODE_ENV === "production") {
-  console.warn("\n⚠️  WARNING: Using default admin credentials in production!");
-  console.warn("⚠️  Set ADMIN_PASSWORD_HASH environment variable to secure your admin panel.");
-  console.warn("⚠️  Generate hash: node -e \"console.log(require('crypto').createHash('sha256').update('YOUR_PASSWORD').digest('hex'))\"\n");
-}
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "@Stootap123";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || "dev-secret-change-in-production";
 
-export function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password).digest("hex");
-}
-
 export function verifyAdmin(username: string, password: string): boolean {
-  const passwordHash = hashPassword(password);
-  return username === ADMIN_USERNAME && passwordHash === ADMIN_PASSWORD_HASH;
+  return username === ADMIN_USERNAME && password === ADMIN_PASSWORD;
 }
 
 // Sign a cookie value with SESSION_SECRET
