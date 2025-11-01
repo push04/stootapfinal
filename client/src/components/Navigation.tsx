@@ -1,15 +1,37 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Moon, Sun, Menu, X, ShoppingCart } from "lucide-react";
+import { Moon, Sun, Menu, X, ShoppingCart, User } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCart } from "@/contexts/CartContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Navigation() {
   const { theme, toggleTheme } = useTheme();
   const { itemCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/me", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setIsLoggedIn(true);
+          setUserName(data.fullName);
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch {
+        setIsLoggedIn(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
@@ -41,16 +63,27 @@ export default function Navigation() {
             >
               Contact
             </Link>
-            <Link
-              href="/login"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-              data-testid="link-login"
-            >
-              Login
-            </Link>
-            <Button asChild data-testid="button-signup">
-              <Link href="/register">Sign Up</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button asChild variant="ghost" data-testid="button-profile">
+                <Link href="/profile" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {userName || "Profile"}
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  data-testid="link-login"
+                >
+                  Login
+                </Link>
+                <Button asChild data-testid="button-signup">
+                  <Link href="/register">Sign Up</Link>
+                </Button>
+              </>
+            )}
             <Link href="/checkout">
               <Button variant="ghost" size="icon" className="relative" aria-label="View cart">
                 <ShoppingCart className="h-5 w-5" />
@@ -120,17 +153,28 @@ export default function Navigation() {
             >
               Contact
             </Link>
-            <Link
-              href="/login"
-              className="block text-sm font-medium text-foreground hover:text-primary transition-colors"
-              data-testid="link-login-mobile"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Login
-            </Link>
-            <Button asChild className="w-full" data-testid="button-signup-mobile">
-              <Link href="/register" onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button asChild className="w-full" data-testid="button-profile-mobile">
+                <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {userName || "Profile"}
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="block text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  data-testid="link-login-mobile"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Login
+                </Link>
+                <Button asChild className="w-full" data-testid="button-signup-mobile">
+                  <Link href="/register" onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>

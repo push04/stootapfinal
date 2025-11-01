@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,7 +43,7 @@ type RegisterData = z.infer<typeof registerSchema>;
 export default function Register() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [, setLocation] = useState("");
+  const [, setLocation] = useLocation();
 
   const form = useForm<RegisterData>({
     resolver: zodResolver(registerSchema),
@@ -59,17 +59,47 @@ export default function Register() {
 
   const onSubmit = async (data: RegisterData) => {
     setIsSubmitting(true);
-    console.log("Registration attempt:", data);
     
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Success!",
-      description: "Your account has been created. Please check your email to verify.",
-    });
-    
-    setIsSubmitting(false);
-    setLocation("/auth/verify-email");
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          fullName: data.name,
+          email: data.email,
+          phone: data.phone,
+          password: data.password,
+          role: data.role,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Success!",
+          description: "Your account has been created successfully.",
+        });
+        setLocation("/profile");
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: result.error || "Failed to create account",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
