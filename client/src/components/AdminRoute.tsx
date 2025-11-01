@@ -9,7 +9,7 @@ interface AdminRouteProps {
 }
 
 export function AdminRoute({ children }: AdminRouteProps) {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -19,40 +19,34 @@ export function AdminRoute({ children }: AdminRouteProps) {
   }, []);
 
   const checkAdminAccess = async () => {
-    // Check for hardcoded admin session first
-    const adminAuth = sessionStorage.getItem("adminAuth");
-    if (adminAuth === "true") {
-      setIsAuthorized(true);
-      setIsLoading(false);
-      return;
-    }
-
-    // Check Supabase session
-    const { session } = await getCurrentSession();
-    
-    if (!session) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to access this page.",
-        variant: "destructive",
+    try {
+      // Check admin status from server (handles both cookie-based and Supabase auth)
+      const response = await fetch("/api/admin/check", {
+        credentials: "include", // Include cookies
       });
-      setLocation("/admin/login");
-      return;
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.isAdmin) {
+          setIsAuthorized(true);
+          setIsLoading(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error("Admin check failed:", err);
     }
 
-    const adminStatus = await isAdmin();
+    // Not authorized - redirect to login
+    toast({
+      title: "Authentication Required",
+      description: "Please log in to access the admin area.",
+      variant: "destructive",
+    });
     
-    if (!adminStatus) {
-      toast({
-        title: "Access Denied",
-        description: "You do not have permission to access the admin area.",
-        variant: "destructive",
-      });
-      setLocation("/profile");
-      return;
-    }
-
-    setIsAuthorized(true);
+    // Remember the intended page for redirect after login
+    const nextUrl = location !== '/admin/login' ? encodeURIComponent(location) : '';
+    setLocation(`/admin/login${nextUrl ? `?next=${nextUrl}` : ''}`);
     setIsLoading(false);
   };
 
