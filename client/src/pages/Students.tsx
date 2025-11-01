@@ -294,10 +294,12 @@ export default function Students() {
                     Start Your Journey
                   </Button>
                 </Link>
-                <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-                  <Calendar className="mr-2 h-5 w-5" />
-                  Book Free Consultation
-                </Button>
+                <Link href="/contact">
+                  <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                    <Calendar className="mr-2 h-5 w-5" />
+                    Book Free Consultation
+                  </Button>
+                </Link>
               </motion.div>
             </div>
           </div>
@@ -435,10 +437,23 @@ export default function Students() {
                           </div>
                         </div>
                       </div>
-                      <Button variant="outline" className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-all">
-                        Learn More
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
+                      {opportunity.link && opportunity.link !== "#" ? (
+                        <Button 
+                          variant="outline" 
+                          className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-all"
+                          onClick={() => window.open(opportunity.link, '_blank', 'noopener,noreferrer')}
+                        >
+                          Learn More
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Link href="/contact">
+                          <Button variant="outline" className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-all">
+                            Contact for Details
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </Link>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
