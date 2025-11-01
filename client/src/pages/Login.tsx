@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
@@ -14,13 +15,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
-import { supabase } from "@/lib/supabase-client";
+import { signIn, getCurrentSession, resendVerificationEmail } from "@/lib/auth-service";
+import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+  rememberMe: z.boolean().default(false),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -28,6 +32,9 @@ type LoginData = z.infer<typeof loginSchema>;
 export default function Login() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [, setLocation] = useLocation();
 
   const form = useForm<LoginData>({
@@ -35,43 +42,83 @@ export default function Login() {
     defaultValues: {
       email: "",
       password: "",
+      rememberMe: false,
     },
   });
 
-  const onSubmit = async (data: LoginData) => {
-    setIsSubmitting(true);
-    
-    try {
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
+  useEffect(() => {
+    checkExistingAuth();
+  }, []);
 
-      if (error) throw error;
+  const checkExistingAuth = async () => {
+    const { session } = await getCurrentSession();
+    if (session) {
+      setLocation("/profile");
+    }
+  };
 
-      if (authData.user) {
-        toast({
-          title: "Success!",
-          description: "You have been logged in successfully.",
-        });
-        setLocation("/profile");
-      }
-    } catch (error: any) {
+  const handleResendVerification = async () => {
+    const email = form.getValues("email");
+    if (!email) {
       toast({
-        title: "Login Failed",
-        description: error.message || "Invalid email or password",
+        title: "Email Required",
+        description: "Please enter your email address",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    const result = await resendVerificationEmail(email);
+    if (result.success) {
+      toast({
+        title: "Email Sent",
+        description: "Verification email has been sent. Please check your inbox.",
+      });
+    } else {
+      toast({
+        title: "Failed to Send",
+        description: result.error || "Failed to send verification email",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const onSubmit = async (data: LoginData) => {
+    setIsSubmitting(true);
+    setErrorMessage("");
+    setNeedsVerification(false);
+    
+    const result = await signIn(data.email, data.password);
+
+    if (result.success && result.session) {
+      toast({
+        title: "Welcome back!",
+        description: "You have been logged in successfully.",
+      });
+      setLocation("/profile");
+    } else {
+      setErrorMessage(result.error || "An unexpected error occurred");
+      
+      if (result.error?.toLowerCase().includes("verify your email") || 
+          result.error?.toLowerCase().includes("email not confirmed")) {
+        setNeedsVerification(true);
+      }
+
+      toast({
+        title: "Login Failed",
+        description: result.error || "Please check your credentials and try again",
+        variant: "destructive",
+      });
+    }
+    
+    setIsSubmitting(false);
   };
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navigation />
       <main className="flex-1 flex items-center justify-center py-16 px-4">
-        <Card className="w-full max-w-md backdrop-blur-md bg-card/90">
+        <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-heading">Welcome Back</CardTitle>
             <CardDescription>Sign in to your Stootap account</CardDescription>
@@ -79,6 +126,30 @@ export default function Login() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {errorMessage && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{errorMessage}</AlertDescription>
+                  </Alert>
+                )}
+
+                {needsVerification && (
+                  <Alert>
+                    <AlertDescription className="flex items-center justify-between">
+                      <span>Email not verified</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleResendVerification}
+                        className="h-auto p-0 underline"
+                      >
+                        Resend verification
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <FormField
                   control={form.control}
                   name="email"
@@ -89,6 +160,7 @@ export default function Login() {
                         <Input
                           type="email"
                           placeholder="your@email.com"
+                          autoComplete="email"
                           {...field}
                           data-testid="input-email"
                         />
@@ -105,19 +177,54 @@ export default function Login() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Enter your password"
-                          {...field}
-                          data-testid="input-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter your password"
+                            autoComplete="current-password"
+                            {...field}
+                            data-testid="input-password"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                            tabIndex={-1}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="flex justify-end">
+                <div className="flex items-center justify-between">
+                  <FormField
+                    control={form.control}
+                    name="rememberMe"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal cursor-pointer">
+                          Remember me
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+
                   <Link
                     href="/auth/forgot-password"
                     className="text-sm text-primary hover:underline"
@@ -133,7 +240,14 @@ export default function Login() {
                   disabled={isSubmitting}
                   data-testid="button-login"
                 >
-                  {isSubmitting ? "Signing in..." : "Sign In"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground mt-6">

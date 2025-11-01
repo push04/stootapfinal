@@ -213,12 +213,22 @@ export default function Profile() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out",
-      });
-      setLocation("/");
+      const { signOut } = await import("@/lib/auth-service");
+      const result = await signOut();
+      
+      if (result.success) {
+        toast({
+          title: "Logged Out",
+          description: "You have been successfully logged out",
+        });
+        setLocation("/");
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to log out",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",

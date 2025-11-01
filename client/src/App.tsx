@@ -5,6 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 import AIConcierge from "@/components/AIConcierge";
 import Home from "@/pages/Home";
 import Contact from "@/pages/Contact";
@@ -12,6 +15,8 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import ForgotPassword from "@/pages/ForgotPassword";
 import VerifyEmail from "@/pages/VerifyEmail";
+import ResetPassword from "@/pages/ResetPassword";
+import UpdatePassword from "@/pages/UpdatePassword";
 import Services from "@/pages/Services";
 import ServiceDetail from "@/pages/ServiceDetail";
 import Students from "@/pages/Students";
@@ -31,14 +36,37 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/auth/forgot-password" component={ForgotPassword} />
       <Route path="/auth/verify-email" component={VerifyEmail} />
+      <Route path="/auth/reset-password" component={ResetPassword} />
+      <Route path="/auth/update-password" component={UpdatePassword} />
       <Route path="/services" component={Services} />
       <Route path="/services/:slug" component={ServiceDetail} />
       <Route path="/students" component={Students} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/checkout" component={Checkout} />
       <Route path="/admin/login" component={AdminLogin} />
-      <Route path="/admin" component={AdminDashboard} />
+      
+      <Route path="/dashboard">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/profile">
+        <ProtectedRoute>
+          <Profile />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/checkout">
+        <ProtectedRoute>
+          <Checkout />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/admin">
+        <AdminRoute>
+          <AdminDashboard />
+        </AdminRoute>
+      </Route>
+      
       <Route component={NotFound} />
     </Switch>
   );
@@ -46,17 +74,19 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <CartProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-            <AIConcierge />
-          </TooltipProvider>
-        </CartProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+              <AIConcierge />
+            </TooltipProvider>
+          </CartProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

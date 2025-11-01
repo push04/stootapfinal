@@ -4,25 +4,31 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 
-// Validate credentials are available
+// Fail fast if credentials are missing - no placeholders
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Missing Supabase credentials. Authentication will not work.");
-  console.error("SUPABASE_URL:", supabaseUrl ? "✓" : "✗");
-  console.error("SUPABASE_ANON_KEY:", supabaseAnonKey ? "✓" : "✗");
+  const errorMsg = `
+    ❌ CRITICAL: Missing Supabase credentials!
+    
+    Required environment variables:
+    - VITE_PUBLIC_SUPABASE_URL: ${supabaseUrl ? "✓" : "✗ MISSING"}
+    - VITE_PUBLIC_SUPABASE_ANON_KEY: ${supabaseAnonKey ? "✗ MISSING" : "✓"}
+    
+    Please ensure client/.env.development and client/.env.production files exist with valid credentials.
+  `;
+  console.error(errorMsg);
+  throw new Error("Missing Supabase credentials. Check console for details.");
 }
-
-const url = supabaseUrl || "https://placeholder.supabase.co";
-const key = supabaseAnonKey || "placeholder_key";
 
 // Create Supabase client for browser use with anon key
 export const supabase = createClient(
-  url,
-  key,
+  supabaseUrl,
+  supabaseAnonKey,
   {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
   }
 );

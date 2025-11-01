@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,18 +22,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
-import { supabase } from "@/lib/supabase-client";
+import { signUp, getCurrentSession } from "@/lib/auth-service";
+import { Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone must be at least 10 digits"),
+  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name is too long"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().regex(/^\+?[1-9]\d{9,14}$/, "Please enter a valid phone number"),
   role: z.enum(["student", "business"], { required_error: "Please select your role" }),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
   confirmPassword: z.string(),
-  consent: z.boolean().refine((val) => val === true, "You must agree to continue"),
+  consent: z.boolean().refine((val) => val === true, "You must agree to the terms"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -44,6 +50,9 @@ type RegisterData = z.infer<typeof registerSchema>;
 export default function Register() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [, setLocation] = useLocation();
 
   const form = useForm<RegisterData>({
@@ -58,40 +67,60 @@ export default function Register() {
     },
   });
 
+  useEffect(() => {
+    checkExistingAuth();
+  }, []);
+
+  const checkExistingAuth = async () => {
+    const { session } = await getCurrentSession();
+    if (session) {
+      setLocation("/profile");
+    }
+  };
+
+  const password = form.watch("password");
+
+  const passwordStrength = {
+    hasMinLength: password.length >= 8,
+    hasUppercase: /[A-Z]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+  };
+
   const onSubmit = async (data: RegisterData) => {
     setIsSubmitting(true);
+    setErrorMessage("");
     
-    try {
-      const { data: authData, error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.name,
-            phone: data.phone,
-            role: data.role,
-          },
-        },
-      });
+    const result = await signUp(data.email, data.password, {
+      full_name: data.name,
+      phone: data.phone,
+      role: data.role,
+    });
 
-      if (error) throw error;
-
-      if (authData.user) {
+    if (result.success) {
+      if (result.session) {
         toast({
-          title: "Success!",
+          title: "Welcome to Stootap!",
           description: "Your account has been created successfully.",
         });
         setLocation("/profile");
+      } else if (result.errorCode === 'email_verification_required') {
+        toast({
+          title: "Verification Required",
+          description: result.error || "Please check your email to verify your account.",
+        });
+        setLocation("/auth/verify-email");
       }
-    } catch (error: any) {
+    } else {
+      setErrorMessage(result.error || "An unexpected error occurred");
       toast({
         title: "Registration Failed",
-        description: error.message || "Failed to create account",
+        description: result.error || "Failed to create account. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
+    
+    setIsSubmitting(false);
   };
 
   return (
@@ -106,6 +135,13 @@ export default function Register() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {errorMessage && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{errorMessage}</AlertDescription>
+                  </Alert>
+                )}
+
                 <FormField
                   control={form.control}
                   name="name"
@@ -113,7 +149,12 @@ export default function Register() {
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your full name" {...field} data-testid="input-name" />
+                        <Input 
+                          placeholder="Enter your full name" 
+                          autoComplete="name"
+                          {...field} 
+                          data-testid="input-name" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -130,6 +171,7 @@ export default function Register() {
                         <Input
                           type="email"
                           placeholder="your@email.com"
+                          autoComplete="email"
                           {...field}
                           data-testid="input-email"
                         />
@@ -146,7 +188,12 @@ export default function Register() {
                     <FormItem>
                       <FormLabel>Phone</FormLabel>
                       <FormControl>
-                        <Input placeholder="+91 9876543210" {...field} data-testid="input-phone" />
+                        <Input 
+                          placeholder="+91 9876543210" 
+                          autoComplete="tel"
+                          {...field} 
+                          data-testid="input-phone" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -182,13 +229,58 @@ export default function Register() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Create a password"
-                          {...field}
-                          data-testid="input-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Create a strong password"
+                            autoComplete="new-password"
+                            {...field}
+                            data-testid="input-password"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                            tabIndex={-1}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
                       </FormControl>
+                      {password && (
+                        <div className="space-y-1 text-xs mt-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className={`h-3 w-3 ${passwordStrength.hasMinLength ? 'text-green-500' : 'text-muted-foreground'}`} />
+                            <span className={passwordStrength.hasMinLength ? 'text-green-600' : 'text-muted-foreground'}>
+                              At least 8 characters
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className={`h-3 w-3 ${passwordStrength.hasUppercase ? 'text-green-500' : 'text-muted-foreground'}`} />
+                            <span className={passwordStrength.hasUppercase ? 'text-green-600' : 'text-muted-foreground'}>
+                              One uppercase letter
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className={`h-3 w-3 ${passwordStrength.hasLowercase ? 'text-green-500' : 'text-muted-foreground'}`} />
+                            <span className={passwordStrength.hasLowercase ? 'text-green-600' : 'text-muted-foreground'}>
+                              One lowercase letter
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className={`h-3 w-3 ${passwordStrength.hasNumber ? 'text-green-500' : 'text-muted-foreground'}`} />
+                            <span className={passwordStrength.hasNumber ? 'text-green-600' : 'text-muted-foreground'}>
+                              One number
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -201,12 +293,29 @@ export default function Register() {
                     <FormItem>
                       <FormLabel>Confirm Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Confirm your password"
-                          {...field}
-                          data-testid="input-confirm-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm your password"
+                            autoComplete="new-password"
+                            {...field}
+                            data-testid="input-confirm-password"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            tabIndex={-1}
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -248,7 +357,14 @@ export default function Register() {
                   disabled={isSubmitting}
                   data-testid="button-register"
                 >
-                  {isSubmitting ? "Creating account..." : "Create Account"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground mt-6">
