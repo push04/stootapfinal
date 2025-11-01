@@ -4,8 +4,10 @@ import signature from "cookie-signature";
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || 
-  hashPassword("@Stootap123");
+// Default hash for password "@Stootap123"
+const DEFAULT_ADMIN_PASSWORD_HASH = "6e20e7f929a8745bea430809f10fce69fc53f0385291d4a76c56a817984426d7";
+
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || DEFAULT_ADMIN_PASSWORD_HASH;
 
 if (!process.env.ADMIN_PASSWORD_HASH && process.env.NODE_ENV === "production") {
   console.warn("\n⚠️  WARNING: Using default admin credentials in production!");
