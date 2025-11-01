@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { User, Mail, Phone, Lock, AlertCircle, LogOut, ShoppingBag, Shield, Eye, EyeOff, Package } from "lucide-react";
+import { User, Mail, Phone, Lock, AlertCircle, LogOut, ShoppingBag, Shield, Eye, EyeOff, Package, Activity, Bell, Settings, TrendingUp, Calendar, CreditCard } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
@@ -322,14 +322,37 @@ export default function Profile() {
                   </Avatar>
                   <h2 className="text-xl font-semibold mb-1">{profile.fullName}</h2>
                   <p className="text-sm text-muted-foreground mb-2">{profile.email}</p>
-                  <Badge className="mb-4">
+                  <Badge className="mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-0">
                     {profile.role === "student" ? "Student" : "Business Owner"}
                   </Badge>
-                  <div className="w-full pt-4 border-t mt-4">
-                    <p className="text-xs text-muted-foreground mb-2">Member Since</p>
-                    <p className="text-sm font-medium">
-                      {format(new Date(profile.createdAt), "MMMM yyyy")}
-                    </p>
+                  
+                  {/* Account Stats */}
+                  <div className="w-full pt-4 border-t mt-4 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <ShoppingBag className="h-4 w-4" />
+                        Total Orders
+                      </span>
+                      <span className="font-semibold text-lg">{orders.length}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Total Spent
+                      </span>
+                      <span className="font-semibold text-lg text-emerald-600 dark:text-emerald-400">
+                        ₹{orders.reduce((sum, o) => sum + parseFloat(o.totalInr || "0"), 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm pt-3 border-t">
+                      <span className="text-muted-foreground flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Member Since
+                      </span>
+                      <span className="font-medium">
+                        {format(new Date(profile.createdAt), "MMM yyyy")}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -338,18 +361,26 @@ export default function Profile() {
             <Card className="lg:col-span-2">
               <Tabs defaultValue="info" className="w-full">
                 <CardHeader>
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
                     <TabsTrigger value="info">
                       <User className="h-4 w-4 mr-2" />
-                      Personal Info
+                      <span className="hidden sm:inline">Info</span>
                     </TabsTrigger>
                     <TabsTrigger value="orders">
                       <ShoppingBag className="h-4 w-4 mr-2" />
-                      My Orders
+                      <span className="hidden sm:inline">Orders</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="activity">
+                      <Activity className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Activity</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="preferences">
+                      <Settings className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Settings</span>
                     </TabsTrigger>
                     <TabsTrigger value="security">
                       <Shield className="h-4 w-4 mr-2" />
-                      Security
+                      <span className="hidden sm:inline">Security</span>
                     </TabsTrigger>
                   </TabsList>
                 </CardHeader>
@@ -480,6 +511,196 @@ export default function Profile() {
                         ))}
                       </div>
                     )}
+                  </TabsContent>
+
+                  <TabsContent value="activity" className="mt-0 space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold">Recent Activity</h3>
+                        <p className="text-sm text-muted-foreground">Your account activity history</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center flex-shrink-0">
+                              <ShoppingBag className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium">Profile Created</p>
+                              <p className="text-sm text-muted-foreground">
+                                You joined Stootap and created your account
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {format(new Date(profile.createdAt), "PPP 'at' p")}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {orders.slice(0, 5).map((order, idx) => (
+                        <Card key={order.id}>
+                          <CardContent className="pt-6">
+                            <div className="flex items-start gap-4">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                order.status === 'completed' ? 'bg-green-100 dark:bg-green-900' :
+                                order.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900' :
+                                'bg-blue-100 dark:bg-blue-900'
+                              }`}>
+                                <Package className={`h-5 w-5 ${
+                                  order.status === 'completed' ? 'text-green-600 dark:text-green-400' :
+                                  order.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' :
+                                  'text-blue-600 dark:text-blue-400'
+                                }`} />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium">Order Placed</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Order #{order.id.slice(0, 8)} for ₹{parseFloat(order.totalInr).toFixed(2)}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(new Date(order.createdAt), "PPP 'at' p")}
+                                  </p>
+                                  {getStatusBadge(order.status)}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+
+                      {orders.length === 0 && (
+                        <Card>
+                          <CardContent className="pt-6 text-center py-12">
+                            <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground">No recent activity yet</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="preferences" className="mt-0 space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Bell className="h-5 w-5" />
+                          Notification Preferences
+                        </CardTitle>
+                        <CardDescription>
+                          Manage how you receive notifications
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between py-3 border-b">
+                          <div>
+                            <p className="font-medium">Email Notifications</p>
+                            <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                          </div>
+                          <Badge variant="outline">Enabled</Badge>
+                        </div>
+                        <div className="flex items-center justify-between py-3 border-b">
+                          <div>
+                            <p className="font-medium">Order Updates</p>
+                            <p className="text-sm text-muted-foreground">Get notified about order status changes</p>
+                          </div>
+                          <Badge variant="outline">Enabled</Badge>
+                        </div>
+                        <div className="flex items-center justify-between py-3 border-b">
+                          <div>
+                            <p className="font-medium">Marketing Emails</p>
+                            <p className="text-sm text-muted-foreground">Receive promotional offers and updates</p>
+                          </div>
+                          <Badge variant="outline">Enabled</Badge>
+                        </div>
+                        <div className="flex items-center justify-between py-3">
+                          <div>
+                            <p className="font-medium">Service Updates</p>
+                            <p className="text-sm text-muted-foreground">Get notified about new services</p>
+                          </div>
+                          <Badge variant="outline">Enabled</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5" />
+                          Account Statistics
+                        </CardTitle>
+                        <CardDescription>
+                          Your account performance overview
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 bg-muted rounded-lg">
+                            <p className="text-sm text-muted-foreground mb-1">Total Orders</p>
+                            <p className="text-2xl font-bold">{orders.length}</p>
+                          </div>
+                          <div className="p-4 bg-muted rounded-lg">
+                            <p className="text-sm text-muted-foreground mb-1">Total Spent</p>
+                            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                              ₹{orders.reduce((sum, o) => sum + parseFloat(o.totalInr || "0"), 0).toFixed(0)}
+                            </p>
+                          </div>
+                          <div className="p-4 bg-muted rounded-lg">
+                            <p className="text-sm text-muted-foreground mb-1">Completed</p>
+                            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                              {orders.filter(o => o.status === 'completed').length}
+                            </p>
+                          </div>
+                          <div className="p-4 bg-muted rounded-lg">
+                            <p className="text-sm text-muted-foreground mb-1">Pending</p>
+                            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                              {orders.filter(o => o.status === 'pending').length}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Settings className="h-5 w-5" />
+                          Account Settings
+                        </CardTitle>
+                        <CardDescription>
+                          Manage your account preferences
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between py-3 border-b">
+                          <div>
+                            <p className="font-medium">Account Type</p>
+                            <p className="text-sm text-muted-foreground">
+                              {profile.role === "student" ? "Student Account" : "Business Account"}
+                            </p>
+                          </div>
+                          <Badge variant="secondary">{profile.role}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between py-3 border-b">
+                          <div>
+                            <p className="font-medium">Email Verified</p>
+                            <p className="text-sm text-muted-foreground">Your email address is verified</p>
+                          </div>
+                          <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-0">Verified</Badge>
+                        </div>
+                        <div className="flex items-center justify-between py-3">
+                          <div>
+                            <p className="font-medium">Two-Factor Authentication</p>
+                            <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
+                          </div>
+                          <Button variant="outline" size="sm">Enable</Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </TabsContent>
 
                   <TabsContent value="security" className="mt-0 space-y-6">

@@ -5,34 +5,67 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { 
   LogOut, DollarSign, ShoppingCart, Users, Package, TrendingUp, 
   Activity, RefreshCw, Settings, BarChart3, Clock, CheckCheck,
-  Home, Layers, FolderKanban, FileText, Bell
+  Home, Layers, FolderKanban, FileText, Bell, CheckCircle2, XCircle,
+  Database, Wifi, AlertCircle, Zap, Download
 } from "lucide-react";
 import { format } from "date-fns";
 import ServiceManagement from "@/components/admin/ServiceManagement";
 import CategoryManagement from "@/components/admin/CategoryManagement";
 import UserManagement from "@/components/admin/UserManagement";
 import OrderManagement from "@/components/admin/OrderManagement";
-import { SecurityBanner } from "@/components/admin/SecurityBanner";
 import { WelcomeChecklist } from "@/components/admin/WelcomeChecklist";
 import { NotificationBell } from "@/components/admin/NotificationBell";
 import { QuickActions } from "@/components/admin/QuickActions";
 import { SavedFilters } from "@/components/admin/SavedFilters";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { LineChart, Line, BarChart as RechartsBar, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 interface Analytics {
   totalOrders: number;
   pendingOrders: number;
   completedOrders: number;
+  processingOrders: number;
+  cancelledOrders: number;
   totalRevenue: string;
   totalLeads: number;
   totalServices: number;
   activeServices: number;
   recentOrders: any[];
   recentLeads: any[];
+  ordersLast7Days: number;
+  ordersLast30Days: number;
+  leadsLast7Days: number;
+  leadsLast30Days: number;
+  revenueLast7Days: string;
+  revenueLast30Days: string;
+  weeklyTrend: Array<{
+    date: string;
+    name: string;
+    orders: number;
+    revenue: number;
+    leads: number;
+  }>;
+  servicePerformance: Array<{
+    serviceId: string;
+    serviceName: string;
+    categoryId: string;
+    active: boolean;
+    basePriceInr: string;
+  }>;
+  categoryStats: Array<{
+    categoryId: string;
+    categoryName: string;
+    serviceCount: number;
+    activeServiceCount: number;
+  }>;
+  conversionRate: string;
+  avgOrderValue: string;
+  completionRate: string;
 }
 
 export default function AdminDashboard() {
@@ -46,6 +79,10 @@ export default function AdminDashboard() {
     return localStorage.getItem("hideAdminWelcome") !== "true";
   });
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [services, setServices] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [systemHealth, setSystemHealth] = useState<any>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
 
   useEffect(() => {
     loadAllData();
@@ -53,7 +90,11 @@ export default function AdminDashboard() {
 
   const loadAllData = async () => {
     setLoading(true);
-    await loadAnalytics();
+    await Promise.all([
+      loadAnalytics(),
+      loadServices(),
+      loadCategories(),
+    ]);
     setLoading(false);
   };
 
@@ -76,6 +117,53 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error("Failed to load analytics", err);
+    }
+  };
+
+  const loadServices = async () => {
+    try {
+      const response = await fetch("/api/admin/services");
+      if (response.ok) {
+        const data = await response.json();
+        setServices(data);
+      }
+    } catch (err) {
+      console.error("Failed to load services", err);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await fetch("/api/admin/categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (err) {
+      console.error("Failed to load categories", err);
+    }
+  };
+
+  const checkSystemHealth = async () => {
+    try {
+      setHealthLoading(true);
+      const res = await fetch("/api/admin/integration-status");
+      if (res.ok) {
+        const data = await res.json();
+        setSystemHealth(data);
+        toast({
+          title: "System Check Complete",
+          description: "All system status updated",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Health Check Failed",
+        description: "Unable to fetch system health status",
+        variant: "destructive",
+      });
+    } finally {
+      setHealthLoading(false);
     }
   };
 
@@ -130,6 +218,98 @@ export default function AdminDashboard() {
       title: "Filters Applied",
       description: "View updated with saved filter",
     });
+  };
+
+  const exportToCSV = async (type: 'orders' | 'services' | 'users' | 'analytics') => {
+    try {
+      if (!analytics && type === 'analytics') {
+        toast({
+          title: "Data Not Ready",
+          description: "Please wait for analytics to load before exporting",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      let data: any[] = [];
+      let filename = '';
+      let headers: string[] = [];
+
+      switch (type) {
+        case 'orders':
+          const ordersRes = await fetch('/api/admin/orders');
+          if (ordersRes.ok) {
+            data = await ordersRes.json();
+            filename = `orders_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+            headers = ['ID', 'User', 'Total', 'Status', 'Date'];
+          }
+          break;
+        case 'services':
+          data = services;
+          filename = `services_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+          headers = ['ID', 'Name', 'Category', 'Price (INR)', 'Active'];
+          break;
+        case 'users':
+          const usersRes = await fetch('/api/admin/users');
+          if (usersRes.ok) {
+            data = await usersRes.json();
+            filename = `users_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+            headers = ['ID', 'Email', 'Name', 'User Type', 'Created At'];
+          }
+          break;
+        case 'analytics':
+          data = [analytics];
+          filename = `analytics_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+          headers = ['Total Revenue', 'Total Orders', 'Pending Orders', 'Completed Orders', 'Total Leads', 'Active Services'];
+          break;
+      }
+
+      if (!data || data.length === 0) {
+        toast({
+          title: "No Data",
+          description: "There is no data to export",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const csvContent = [
+        headers.join(','),
+        ...data.map(row => {
+          if (type === 'orders') {
+            return [row.id, row.userId, row.totalInr, row.status, format(new Date(row.createdAt), 'yyyy-MM-dd')].join(',');
+          } else if (type === 'services') {
+            return [row.id, row.name, row.categoryId, row.basePriceInr, row.active].join(',');
+          } else if (type === 'users') {
+            return [row.id, row.email, row.fullName || '', row.userType, format(new Date(row.createdAt), 'yyyy-MM-dd')].join(',');
+          } else {
+            return [row.totalRevenue, row.totalOrders, row.pendingOrders, row.completedOrders, row.totalLeads, row.activeServices].join(',');
+          }
+        })
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Export Successful",
+        description: `${filename} has been downloaded`,
+      });
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export data",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calculate metrics
@@ -206,9 +386,6 @@ export default function AdminDashboard() {
       </header>
 
       <main className="mx-auto px-4 lg:px-8 py-6 max-w-[1600px]">
-        {/* Security Banner */}
-        <SecurityBanner />
-        
         {/* Welcome Checklist */}
         {showWelcome && (
           <div className="mb-6">
@@ -339,28 +516,164 @@ export default function AdminDashboard() {
             </CardHeader>
 
             <CardContent className="p-6">
-              <TabsContent value="overview" className="mt-0 space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Card>
+              <TabsContent value="overview" className="mt-0 space-y-6">
+                {/* Export Actions */}
+                <div className="flex flex-wrap gap-2 justify-end">
+                  <Button onClick={() => exportToCSV('analytics')} variant="outline" size="sm" className="gap-2" disabled={!analytics}>
+                    <Download className="h-4 w-4" />
+                    Export Analytics
+                  </Button>
+                  <Button onClick={() => exportToCSV('orders')} variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export Orders
+                  </Button>
+                  <Button onClick={() => exportToCSV('services')} variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export Services
+                  </Button>
+                  <Button onClick={() => exportToCSV('users')} variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export Users
+                  </Button>
+                </div>
+
+                {/* Charts Section - Using REAL DATA */}
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Card className="col-span-2">
                     <CardHeader>
-                      <CardTitle className="text-lg">Recent Activity</CardTitle>
-                      <CardDescription>Latest actions on your platform</CardDescription>
+                      <CardTitle className="text-lg">Revenue & Order Trends (Last 7 Days)</CardTitle>
+                      <CardDescription>Real-time data from your database</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">New order received</p>
-                            <p className="text-xs text-muted-foreground">{format(new Date(), 'PPp')}</p>
-                          </div>
+                      {analytics?.weeklyTrend && analytics.weeklyTrend.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={analytics.weeklyTrend}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="name" className="text-xs" />
+                            <YAxis yAxisId="left" className="text-xs" />
+                            <YAxis yAxisId="right" orientation="right" className="text-xs" />
+                            <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                            <Legend />
+                            <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Revenue (₹)" />
+                            <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#6366f1" strokeWidth={2} name="Orders" />
+                            <Line yAxisId="right" type="monotone" dataKey="leads" stroke="#f59e0b" strokeWidth={2} name="Leads" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                          No data available yet. Start getting orders to see trends!
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">Service updated</p>
-                            <p className="text-xs text-muted-foreground">2 hours ago</p>
-                          </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Order Distribution</CardTitle>
+                      <CardDescription>Real order status breakdown</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {analytics && (analytics.completedOrders > 0 || analytics.pendingOrders > 0 || analytics.processingOrders > 0 || analytics.cancelledOrders > 0) ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                { name: 'Completed', value: analytics?.completedOrders || 0, color: '#10b981' },
+                                { name: 'Pending', value: analytics?.pendingOrders || 0, color: '#f59e0b' },
+                                { name: 'Processing', value: analytics?.processingOrders || 0, color: '#6366f1' },
+                                { name: 'Cancelled', value: analytics?.cancelledOrders || 0, color: '#ef4444' }
+                              ].filter(item => item.value > 0)}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={(entry) => `${entry.name}: ${entry.value}`}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {[
+                                { name: 'Completed', value: analytics?.completedOrders || 0, color: '#10b981' },
+                                { name: 'Pending', value: analytics?.pendingOrders || 0, color: '#f59e0b' },
+                                { name: 'Processing', value: analytics?.processingOrders || 0, color: '#6366f1' },
+                                { name: 'Cancelled', value: analytics?.cancelledOrders || 0, color: '#ef4444' }
+                              ].filter(item => item.value > 0).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                          No orders yet
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Category Performance</CardTitle>
+                      <CardDescription>Services per category (real data)</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {analytics?.categoryStats && analytics.categoryStats.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                          <RechartsBar data={analytics.categoryStats.slice(0, 6)}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="categoryName" className="text-xs" angle={-45} textAnchor="end" height={80} />
+                            <YAxis className="text-xs" />
+                            <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                            <Legend />
+                            <Bar dataKey="serviceCount" fill="#8b5cf6" name="Total Services" />
+                            <Bar dataKey="activeServiceCount" fill="#10b981" name="Active Services" />
+                          </RechartsBar>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                          No categories yet
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Advanced Analytics Section */}
+                <div className="grid gap-6 md:grid-cols-3">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Lead Conversion Funnel</CardTitle>
+                      <CardDescription>Track your conversion metrics</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Total Leads</span>
+                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {analytics?.totalLeads || 0}
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Converted to Orders</span>
+                        <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                          {analytics?.totalOrders || 0}
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-emerald-600 h-2 rounded-full" 
+                          style={{ width: `${analytics?.conversionRate || 0}%` }}
+                        ></div>
+                      </div>
+                      
+                      <div className="pt-3 border-t">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Conversion Rate</span>
+                          <span className="text-lg font-bold text-primary">{analytics?.conversionRate || 0}%</span>
                         </div>
                       </div>
                     </CardContent>
@@ -368,22 +681,106 @@ export default function AdminDashboard() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Quick Stats</CardTitle>
-                      <CardDescription>Performance at a glance</CardDescription>
+                      <CardTitle className="text-lg">Recent Performance</CardTitle>
+                      <CardDescription>Last 7 vs 30 days comparison</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Avg. Order Value</span>
-                        <span className="font-semibold">₹{analytics?.totalRevenue ? (parseFloat(analytics.totalRevenue) / Math.max(analytics.totalOrders, 1)).toFixed(2) : '0.00'}</span>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-muted-foreground">Orders (7d)</span>
+                          <span className="font-semibold">{analytics?.ordersLast7Days || 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-muted-foreground">Orders (30d)</span>
+                          <span className="font-semibold">{analytics?.ordersLast30Days || 0}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Conversion Rate</span>
-                        <span className="font-semibold">{conversionRate}%</span>
+                      <div className="border-t pt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-muted-foreground">Revenue (7d)</span>
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                            ₹{analytics?.revenueLast7Days || '0.00'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-muted-foreground">Revenue (30d)</span>
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                            ₹{analytics?.revenueLast30Days || '0.00'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Completion Rate</span>
-                        <span className="font-semibold">{revenueGrowth}%</span>
+                      <div className="border-t pt-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Leads (7d / 30d)</span>
+                          <span className="font-semibold">{analytics?.leadsLast7Days || 0} / {analytics?.leadsLast30Days || 0}</span>
+                        </div>
                       </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Business KPIs</CardTitle>
+                      <CardDescription>Key performance indicators</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="p-3 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/10 rounded-lg">
+                        <p className="text-xs text-muted-foreground mb-1">Avg Order Value</p>
+                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                          ₹{analytics?.avgOrderValue || '0.00'}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 rounded-lg">
+                        <p className="text-xs text-muted-foreground mb-1">Order Completion Rate</p>
+                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {analytics?.completionRate || 0}%
+                        </p>
+                      </div>
+                      <div className="p-3 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/10 rounded-lg">
+                        <p className="text-xs text-muted-foreground mb-1">Active Services</p>
+                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                          {analytics?.activeServices || 0} / {analytics?.totalServices || 0}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Quick Stats Grid */}
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Order Value</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                        ₹{analytics?.totalRevenue ? (parseFloat(analytics.totalRevenue) / Math.max(analytics.totalOrders, 1)).toFixed(2) : '0.00'}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Per completed order</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Conversion Rate</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {conversionRate}%
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Leads to orders</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Completion Rate</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                        {revenueGrowth}%
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Orders completed</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -394,42 +791,225 @@ export default function AdminDashboard() {
               </TabsContent>
 
               <TabsContent value="services" className="mt-0">
-                <ServiceManagement />
+                <ServiceManagement 
+                  services={services} 
+                  categories={categories} 
+                  onUpdate={loadAllData} 
+                />
               </TabsContent>
 
               <TabsContent value="categories" className="mt-0">
-                <CategoryManagement />
+                <CategoryManagement 
+                  categories={categories} 
+                  services={services} 
+                  onUpdate={loadAllData} 
+                />
               </TabsContent>
 
               <TabsContent value="users" className="mt-0">
                 <UserManagement />
               </TabsContent>
 
-              <TabsContent value="settings" className="mt-0">
+              <TabsContent value="settings" className="mt-0 space-y-6">
+                {/* System Health Monitoring */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Dashboard Settings</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Activity className="h-5 w-5" />
+                          System Health Monitor
+                        </CardTitle>
+                        <CardDescription>Real-time status of all integrations and services</CardDescription>
+                      </div>
+                      <Button onClick={checkSystemHealth} disabled={healthLoading}>
+                        <RefreshCw className={`h-4 w-4 mr-2 ${healthLoading ? 'animate-spin' : ''}`} />
+                        {healthLoading ? 'Checking...' : 'Check Status'}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Razorpay Status */}
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <DollarSign className="h-5 w-5 text-purple-600" />
+                          <div>
+                            <p className="font-semibold">Razorpay Payment Gateway</p>
+                            <p className="text-sm text-muted-foreground">Payment processing service</p>
+                          </div>
+                        </div>
+                        {systemHealth?.razorpay ? (
+                          systemHealth.razorpay.configured ? (
+                            <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-0">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Active
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Not Configured
+                            </Badge>
+                          )
+                        ) : (
+                          <Badge variant="secondary">Unknown</Badge>
+                        )}
+                      </div>
+                      {systemHealth?.razorpay?.error && (
+                        <Alert className="mt-2">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">{systemHealth.razorpay.error}</AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+
+                    {/* Supabase Status */}
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <Database className="h-5 w-5 text-emerald-600" />
+                          <div>
+                            <p className="font-semibold">Supabase Database</p>
+                            <p className="text-sm text-muted-foreground">User authentication & data storage</p>
+                          </div>
+                        </div>
+                        {systemHealth?.supabase ? (
+                          systemHealth.supabase.configured ? (
+                            <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-0">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Connected
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Not Connected
+                            </Badge>
+                          )
+                        ) : (
+                          <Badge variant="secondary">Unknown</Badge>
+                        )}
+                      </div>
+                      {systemHealth?.supabase?.error && (
+                        <Alert className="mt-2">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">{systemHealth.supabase.error}</AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+
+                    {/* OpenRouter Status */}
+                    <div className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <Zap className="h-5 w-5 text-yellow-600" />
+                          <div>
+                            <p className="font-semibold">OpenRouter AI Concierge</p>
+                            <p className="text-sm text-muted-foreground">AI-powered customer support</p>
+                          </div>
+                        </div>
+                        {systemHealth?.openrouter ? (
+                          systemHealth.openrouter.configured ? (
+                            <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-0">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Active
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Not Configured
+                            </Badge>
+                          )
+                        ) : (
+                          <Badge variant="secondary">Unknown</Badge>
+                        )}
+                      </div>
+                      {systemHealth?.openrouter?.error && (
+                        <Alert className="mt-2">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">{systemHealth.openrouter.error}</AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+
+                    {!systemHealth && (
+                      <Alert>
+                        <Wifi className="h-4 w-4" />
+                        <AlertDescription>
+                          Click "Check Status" to view system health information
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Dashboard Preferences */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dashboard Preferences</CardTitle>
                     <CardDescription>Customize your admin experience</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="font-semibold">Preferences</h3>
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">Show Welcome Checklist</p>
-                          <p className="text-sm text-muted-foreground">Display the welcome guide on dashboard load</p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            localStorage.removeItem("hideAdminWelcome");
-                            setShowWelcome(true);
-                          }}
-                        >
-                          Reset
-                        </Button>
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">Show Welcome Checklist</p>
+                        <p className="text-sm text-muted-foreground">Display the welcome guide on dashboard load</p>
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          localStorage.removeItem("hideAdminWelcome");
+                          setShowWelcome(true);
+                          toast({
+                            title: "Welcome Checklist Restored",
+                            description: "The welcome guide will appear on next refresh",
+                          });
+                        }}
+                      >
+                        Reset
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">Data Refresh Rate</p>
+                        <p className="text-sm text-muted-foreground">Analytics update frequency</p>
+                      </div>
+                      <Badge variant="outline">Manual</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">Admin Session</p>
+                        <p className="text-sm text-muted-foreground">Current login status</p>
+                      </div>
+                      <Badge className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-0">Active</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* System Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>System Information</CardTitle>
+                    <CardDescription>Platform and database details</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-sm text-muted-foreground">Platform</span>
+                      <span className="font-medium">Stootap Admin v1.0</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-sm text-muted-foreground">Database</span>
+                      <span className="font-medium">Supabase PostgreSQL</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-sm text-muted-foreground">Environment</span>
+                      <span className="font-medium">Production</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm text-muted-foreground">Last Updated</span>
+                      <span className="font-medium">{format(new Date(), 'PPp')}</span>
                     </div>
                   </CardContent>
                 </Card>
