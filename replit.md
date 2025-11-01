@@ -6,11 +6,27 @@ Stootap is a comprehensive business services platform designed to help students 
 
 ## Recent Changes (November 1, 2025)
 
+### Latest Updates - Admin Dashboard & Profile Enhancements
+- **Simplified Admin Authentication:** Changed admin authentication from SHA-256 hashing to plain text password comparison (username: admin, password: @Stootap123) for easier access to private site
+- **Enhanced Profile Page:** 
+  - Added tabbed interface with Personal Info, My Orders, and Security sections
+  - Implemented logout functionality with button in header
+  - Improved visual design with gradient avatar backgrounds
+  - Added member information and notification preferences display
+  - Created placeholder for future order history
+- **Admin Dashboard Settings Tab:**
+  - Added new Settings tab to admin dashboard for checking API integration status
+  - Created `/api/admin/integration-status` endpoint to verify Razorpay, OpenRouter, and Supabase credentials
+  - Visual status indicators showing which services are properly configured
+  - Real-time refresh capability to re-check integration status
+- **Fixed Supabase Client Configuration:** Updated client-side Supabase initialization to handle missing VITE_PUBLIC environment variables gracefully with placeholder values
+- **Workflow Configuration:** Set up dev-server workflow on port 5000 with webview output type for Replit preview
+
 ### Replit Environment Setup
 - Successfully imported project from GitHub and configured for Replit environment
 - Installed all Node.js dependencies and resolved TypeScript configuration
-- Set up PostgreSQL database using Replit's built-in database (DATABASE_URL)
-- Pushed database schema using Drizzle ORM and seeded with initial data (8 categories, 50 services)
+- Set up Supabase database connection using SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+- Pushed database schema using Drizzle ORM and seeded with initial data (8 categories, 50+ services)
 - Configured workflow for development server running on port 5000 with Vite HMR
 
 ### Netlify Serverless Deployment Configuration
@@ -40,7 +56,8 @@ Stootap is a comprehensive business services platform designed to help students 
 ### API Keys and Secrets
 - RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET configured for payment processing
 - OPENROUTER_API_KEY configured for AI concierge functionality using DeepSeek model
-- DATABASE_URL configured for PostgreSQL database connection
+- SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY configured for database access
+- SUPABASE_ANON_KEY configured for client-side operations
 - SESSION_SECRET required for production deployment (Netlify environment variable)
 - All secrets properly stored in Replit environment variables
 
@@ -55,9 +72,11 @@ Stootap is a comprehensive business services platform designed to help students 
 - Database successfully seeded with sample data
 
 ### Known Limitations
-- Password hashing uses SHA-256 without salt (matches admin auth pattern). For production, upgrade to bcrypt or argon2 for better security
+- Admin authentication uses plain text password comparison (by design for private site access)
+- Client-side Supabase integration uses placeholder values when VITE_PUBLIC_ environment variables are not set (backend handles all database operations)
 - No rate limiting on login attempts (should add for production)
 - No email verification flow (registration is immediate)
+- User authentication via Supabase Auth is configured but requires frontend environment variable setup for full functionality
 
 ## User Preferences
 
