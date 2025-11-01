@@ -442,6 +442,172 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     }
   });
 
+  // User Authentication
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { fullName, email, password, phone, role } = req.body;
+      
+      if (!fullName || !email || !password) {
+        return res.status(400).json({ error: "Full name, email, and password are required" });
+      }
+      
+      const existingProfile = await storage.getProfileByEmail(email);
+      if (existingProfile) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+      
+      const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
+      
+      const profile = await storage.createProfile({
+        fullName,
+        email,
+        phone: phone || null,
+        passwordHash,
+        role: role || "business",
+      });
+      
+      return new Promise((resolve) => {
+        if (req.session) {
+          req.session.regenerate((err) => {
+            if (err) {
+              console.error("Session regeneration error:", err);
+              res.status(500).json({ error: "Session error" });
+              resolve();
+              return;
+            }
+            req.session.userId = profile.id;
+            req.session.save((saveErr) => {
+              if (saveErr) {
+                console.error("Session save error:", saveErr);
+                res.status(500).json({ error: "Session save error" });
+                resolve();
+                return;
+              }
+              res.json({ 
+                success: true, 
+                message: "Registration successful",
+                user: {
+                  id: profile.id,
+                  fullName: profile.fullName,
+                  email: profile.email,
+                  phone: profile.phone,
+                  role: profile.role
+                }
+              });
+              resolve();
+            });
+          });
+        } else {
+          res.status(500).json({ error: "No session available" });
+          resolve();
+        }
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ error: "Registration failed" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      
+      const profile = await storage.getProfileByEmail(email);
+      if (!profile) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      
+      const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
+      if (profile.passwordHash !== passwordHash) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      
+      return new Promise((resolve) => {
+        if (req.session) {
+          req.session.regenerate((err) => {
+            if (err) {
+              console.error("Session regeneration error:", err);
+              res.status(500).json({ error: "Session error" });
+              resolve();
+              return;
+            }
+            req.session.userId = profile.id;
+            req.session.save((saveErr) => {
+              if (saveErr) {
+                console.error("Session save error:", saveErr);
+                res.status(500).json({ error: "Session save error" });
+                resolve();
+                return;
+              }
+              res.json({ 
+                success: true, 
+                message: "Login successful",
+                user: {
+                  id: profile.id,
+                  fullName: profile.fullName,
+                  email: profile.email,
+                  phone: profile.phone,
+                  role: profile.role
+                }
+              });
+              resolve();
+            });
+          });
+        } else {
+          res.status(500).json({ error: "No session available" });
+          resolve();
+        }
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    if (req.session) {
+      req.session.userId = undefined;
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error during logout:", err);
+        }
+        res.json({ success: true, message: "Logged out successfully" });
+      });
+    } else {
+      res.json({ success: true, message: "Logged out successfully" });
+    }
+  });
+
+  app.get("/api/me", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const profile = await storage.getProfile(req.session.userId);
+      if (!profile) {
+        req.session.userId = undefined;
+        return res.status(401).json({ error: "User not found" });
+      }
+      
+      res.json({
+        id: profile.id,
+        fullName: profile.fullName,
+        email: profile.email,
+        phone: profile.phone,
+        role: profile.role,
+        createdAt: profile.createdAt
+      });
+    } catch (error) {
+      console.error("Get current user error:", error);
+      res.status(500).json({ error: "Failed to get user profile" });
+    }
+  });
+
   // Admin Authentication
   app.post("/api/admin/login", async (req, res) => {
     try {
