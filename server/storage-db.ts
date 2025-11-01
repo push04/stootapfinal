@@ -1,387 +1,672 @@
-import { eq, desc, and } from "drizzle-orm";
-import { db } from "./db";
-import {
-  profiles,
-  categories,
-  services,
-  orders,
-  orderItems,
-  leads,
-  cartItems,
-  notifications,
-  notificationPreferences,
-  documents,
-  tickets,
-  ticketReplies,
-  auditLogs,
-  subscriptionPlans,
-  userSubscriptions,
-  siteContent,
-  type Profile,
-  type InsertProfile,
-  type Category,
-  type InsertCategory,
-  type Service,
-  type InsertService,
-  type Order,
-  type InsertOrder,
-  type OrderItem,
-  type InsertOrderItem,
-  type Lead,
-  type InsertLead,
-  type CartItem,
-  type InsertCartItem,
-  type Notification,
-  type InsertNotification,
-  type NotificationPreferences,
-  type InsertNotificationPreferences,
-  type Document,
-  type InsertDocument,
-  type Ticket,
-  type InsertTicket,
-  type TicketReply,
-  type InsertTicketReply,
-  type AuditLog,
-  type InsertAuditLog,
-  type SubscriptionPlan,
-  type InsertSubscriptionPlan,
-  type UserSubscription,
-  type InsertUserSubscription,
-  type SiteContent,
-  type InsertSiteContent,
+import { supabaseServer } from "./supabase-server";
+import type {
+  Profile,
+  InsertProfile,
+  Category,
+  InsertCategory,
+  Service,
+  InsertService,
+  Order,
+  InsertOrder,
+  OrderItem,
+  InsertOrderItem,
+  Lead,
+  InsertLead,
+  CartItem,
+  InsertCartItem,
+  Notification,
+  InsertNotification,
+  NotificationPreferences,
+  InsertNotificationPreferences,
+  Document,
+  InsertDocument,
+  Ticket,
+  InsertTicket,
+  TicketReply,
+  InsertTicketReply,
+  AuditLog,
+  InsertAuditLog,
+  SubscriptionPlan,
+  InsertSubscriptionPlan,
+  UserSubscription,
+  InsertUserSubscription,
+  SiteContent,
+  InsertSiteContent,
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
   async getProfile(id: string): Promise<Profile | undefined> {
-    const result = await db.select().from(profiles).where(eq(profiles.id, id)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("profiles")
+      .select("*")
+      .eq("id", id)
+      .single();
+    return data || undefined;
   }
 
   async getProfileByEmail(email: string): Promise<Profile | undefined> {
-    const result = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("profiles")
+      .select("*")
+      .eq("email", email)
+      .single();
+    return data || undefined;
   }
 
   async createProfile(profile: InsertProfile): Promise<Profile> {
-    const result = await db.insert(profiles).values(profile).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("profiles")
+      .insert(profile)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create profile: ${error.message}`);
+    return data;
   }
 
   async updateProfile(id: string, updates: Partial<InsertProfile>): Promise<Profile | undefined> {
-    const result = await db.update(profiles).set(updates).where(eq(profiles.id, id)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("profiles")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async getAllCategories(): Promise<Category[]> {
-    return await db.select().from(categories).orderBy(categories.sortOrder);
+    const { data } = await supabaseServer
+      .from("categories")
+      .select("*")
+      .order("sort_order", { ascending: true });
+    return data || [];
   }
 
   async getCategoryBySlug(slug: string): Promise<Category | undefined> {
-    const result = await db.select().from(categories).where(eq(categories.slug, slug)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("categories")
+      .select("*")
+      .eq("slug", slug)
+      .single();
+    return data || undefined;
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
-    const result = await db.insert(categories).values(category).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("categories")
+      .insert(category)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create category: ${error.message}`);
+    return data;
   }
 
   async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
-    const result = await db.update(categories).set(updates).where(eq(categories.id, id)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("categories")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async deleteCategory(id: string): Promise<boolean> {
-    const result = await db.delete(categories).where(eq(categories.id, id)).returning();
-    return result.length > 0;
+    const { error } = await supabaseServer
+      .from("categories")
+      .delete()
+      .eq("id", id);
+    return !error;
   }
 
   async getAllServices(active?: boolean): Promise<Service[]> {
+    let query = supabaseServer.from("services").select("*");
+    
     if (active !== undefined) {
-      return await db.select().from(services).where(eq(services.active, active));
+      query = query.eq("active", active);
     }
-    return await db.select().from(services);
+    
+    const { data } = await query;
+    return data || [];
   }
 
   async getServicesByCategory(categoryId: string): Promise<Service[]> {
-    return await db.select().from(services).where(eq(services.categoryId, categoryId));
+    const { data } = await supabaseServer
+      .from("services")
+      .select("*")
+      .eq("category_id", categoryId);
+    return data || [];
   }
 
   async getService(id: string): Promise<Service | undefined> {
-    const result = await db.select().from(services).where(eq(services.id, id)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("services")
+      .select("*")
+      .eq("id", id)
+      .single();
+    return data || undefined;
   }
 
   async getServiceBySlug(slug: string): Promise<Service | undefined> {
-    const result = await db.select().from(services).where(eq(services.slug, slug)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("services")
+      .select("*")
+      .eq("slug", slug)
+      .single();
+    return data || undefined;
   }
 
   async createService(service: InsertService): Promise<Service> {
-    const result = await db.insert(services).values(service).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("services")
+      .insert(service)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create service: ${error.message}`);
+    return data;
   }
 
   async updateService(id: string, updates: Partial<InsertService>): Promise<Service | undefined> {
-    const result = await db.update(services).set(updates).where(eq(services.id, id)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("services")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async deleteService(id: string): Promise<boolean> {
-    const result = await db.delete(services).where(eq(services.id, id)).returning();
-    return result.length > 0;
+    const { error } = await supabaseServer
+      .from("services")
+      .delete()
+      .eq("id", id);
+    return !error;
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
-    const result = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("orders")
+      .select("*")
+      .eq("id", id)
+      .single();
+    return data || undefined;
   }
 
   async getOrdersBySession(sessionId: string): Promise<Order[]> {
-    return await db.select().from(orders).where(eq(orders.sessionId, sessionId)).orderBy(desc(orders.createdAt));
+    const { data } = await supabaseServer
+      .from("orders")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async getOrdersByUser(userId: string): Promise<Order[]> {
-    return await db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
+    const { data } = await supabaseServer
+      .from("orders")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async getAllOrders(): Promise<Order[]> {
-    return await db.select().from(orders).orderBy(desc(orders.createdAt));
+    const { data } = await supabaseServer
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async createOrder(order: InsertOrder): Promise<Order> {
-    const result = await db.insert(orders).values(order).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("orders")
+      .insert(order)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create order: ${error.message}`);
+    return data;
   }
 
   async updateOrder(id: string, updates: Partial<InsertOrder>): Promise<Order | undefined> {
-    const result = await db.update(orders).set(updates).where(eq(orders.id, id)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("orders")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async getOrderItemsByOrderId(orderId: string): Promise<OrderItem[]> {
-    return await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+    const { data } = await supabaseServer
+      .from("order_items")
+      .select("*")
+      .eq("order_id", orderId);
+    return data || [];
   }
 
   async createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem> {
-    const result = await db.insert(orderItems).values(orderItem).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("order_items")
+      .insert(orderItem)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create order item: ${error.message}`);
+    return data;
   }
 
   async createLead(lead: InsertLead): Promise<Lead> {
-    const result = await db.insert(leads).values(lead).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("leads")
+      .insert(lead)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create lead: ${error.message}`);
+    return data;
   }
 
   async getAllLeads(): Promise<Lead[]> {
-    return await db.select().from(leads).orderBy(desc(leads.createdAt));
+    const { data } = await supabaseServer
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async getCartItemsBySession(sessionId: string): Promise<CartItem[]> {
-    return await db.select().from(cartItems).where(eq(cartItems.sessionId, sessionId));
+    const { data } = await supabaseServer
+      .from("cart_items")
+      .select("*")
+      .eq("session_id", sessionId);
+    return data || [];
   }
 
   async addToCart(cartItem: InsertCartItem): Promise<CartItem> {
-    const existing = await db
-      .select()
-      .from(cartItems)
-      .where(and(eq(cartItems.sessionId, cartItem.sessionId), eq(cartItems.serviceId, cartItem.serviceId)))
-      .limit(1);
+    // Check if item already exists in cart
+    const { data: existing } = await supabaseServer
+      .from("cart_items")
+      .select("*")
+      .eq("session_id", cartItem.sessionId)
+      .eq("service_id", cartItem.serviceId)
+      .single();
 
-    if (existing.length > 0) {
-      const updated = await db
-        .update(cartItems)
-        .set({ qty: existing[0].qty + (cartItem.qty ?? 1) })
-        .where(eq(cartItems.id, existing[0].id))
-        .returning();
-      return updated[0];
+    if (existing) {
+      // Update quantity if exists
+      const { data, error } = await supabaseServer
+        .from("cart_items")
+        .update({ qty: existing.qty + (cartItem.qty ?? 1) })
+        .eq("id", existing.id)
+        .select()
+        .single();
+      if (error) throw new Error(`Failed to update cart: ${error.message}`);
+      return data;
     }
 
-    const result = await db.insert(cartItems).values(cartItem).returning();
-    return result[0];
+    // Insert new cart item
+    const { data, error } = await supabaseServer
+      .from("cart_items")
+      .insert(cartItem)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to add to cart: ${error.message}`);
+    return data;
   }
 
   async updateCartItemQty(id: string, qty: number): Promise<CartItem | undefined> {
-    const result = await db.update(cartItems).set({ qty }).where(eq(cartItems.id, id)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("cart_items")
+      .update({ qty })
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async removeFromCart(id: string): Promise<boolean> {
-    const result = await db.delete(cartItems).where(eq(cartItems.id, id)).returning();
-    return result.length > 0;
+    const { error } = await supabaseServer
+      .from("cart_items")
+      .delete()
+      .eq("id", id);
+    return !error;
   }
 
   async clearCart(sessionId: string): Promise<void> {
-    await db.delete(cartItems).where(eq(cartItems.sessionId, sessionId));
+    await supabaseServer
+      .from("cart_items")
+      .delete()
+      .eq("session_id", sessionId);
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    const result = await db.insert(notifications).values(notification).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("notifications")
+      .insert(notification)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create notification: ${error.message}`);
+    return data;
   }
 
   async getUserNotifications(userId: string): Promise<Notification[]> {
-    return await db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+    const { data } = await supabaseServer
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async getUnreadNotifications(userId: string): Promise<Notification[]> {
-    return await db
-      .select()
-      .from(notifications)
-      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)))
-      .orderBy(desc(notifications.createdAt));
+    const { data } = await supabaseServer
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("read", false)
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async markNotificationRead(id: string): Promise<Notification | undefined> {
-    const result = await db.update(notifications).set({ read: true }).where(eq(notifications.id, id)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async markAllNotificationsRead(userId: string): Promise<void> {
-    await db.update(notifications).set({ read: true }).where(eq(notifications.userId, userId));
+    await supabaseServer
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", userId);
   }
 
   async getUserNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined> {
-    const result = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, userId)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("notification_preferences")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+    return data || undefined;
   }
 
   async createNotificationPreferences(prefs: InsertNotificationPreferences): Promise<NotificationPreferences> {
-    const result = await db.insert(notificationPreferences).values(prefs).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("notification_preferences")
+      .insert(prefs)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create notification preferences: ${error.message}`);
+    return data;
   }
 
   async updateNotificationPreferences(userId: string, updates: Partial<InsertNotificationPreferences>): Promise<NotificationPreferences | undefined> {
-    const result = await db.update(notificationPreferences).set(updates).where(eq(notificationPreferences.userId, userId)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("notification_preferences")
+      .update(updates)
+      .eq("user_id", userId)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async createDocument(document: InsertDocument): Promise<Document> {
-    const result = await db.insert(documents).values(document).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("documents")
+      .insert(document)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create document: ${error.message}`);
+    return data;
   }
 
   async getOrderDocuments(orderId: string): Promise<Document[]> {
-    return await db.select().from(documents).where(eq(documents.orderId, orderId)).orderBy(desc(documents.createdAt));
+    const { data } = await supabaseServer
+      .from("documents")
+      .select("*")
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async getDocument(id: string): Promise<Document | undefined> {
-    const result = await db.select().from(documents).where(eq(documents.id, id)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("documents")
+      .select("*")
+      .eq("id", id)
+      .single();
+    return data || undefined;
   }
 
   async updateDocument(id: string, updates: Partial<InsertDocument>): Promise<Document | undefined> {
-    const result = await db.update(documents).set(updates).where(eq(documents.id, id)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("documents")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async createTicket(ticket: InsertTicket): Promise<Ticket> {
-    const result = await db.insert(tickets).values(ticket).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("tickets")
+      .insert(ticket)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create ticket: ${error.message}`);
+    return data;
   }
 
   async getTicket(id: string): Promise<Ticket | undefined> {
-    const result = await db.select().from(tickets).where(eq(tickets.id, id)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("tickets")
+      .select("*")
+      .eq("id", id)
+      .single();
+    return data || undefined;
   }
 
   async getUserTickets(userId: string): Promise<Ticket[]> {
-    return await db.select().from(tickets).where(eq(tickets.userId, userId)).orderBy(desc(tickets.createdAt));
+    const { data } = await supabaseServer
+      .from("tickets")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async getAllTickets(): Promise<Ticket[]> {
-    return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+    const { data} = await supabaseServer
+      .from("tickets")
+      .select("*")
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async updateTicket(id: string, updates: Partial<InsertTicket>): Promise<Ticket | undefined> {
-    const result = await db.update(tickets).set({ ...updates, updatedAt: new Date() }).where(eq(tickets.id, id)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("tickets")
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async createTicketReply(reply: InsertTicketReply): Promise<TicketReply> {
-    const result = await db.insert(ticketReplies).values(reply).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("ticket_replies")
+      .insert(reply)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create ticket reply: ${error.message}`);
+    return data;
   }
 
   async getTicketReplies(ticketId: string): Promise<TicketReply[]> {
-    return await db.select().from(ticketReplies).where(eq(ticketReplies.ticketId, ticketId)).orderBy(ticketReplies.createdAt);
+    const { data } = await supabaseServer
+      .from("ticket_replies")
+      .select("*")
+      .eq("ticket_id", ticketId)
+      .order("created_at", { ascending: true });
+    return data || [];
   }
 
   async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
-    const result = await db.insert(auditLogs).values(log).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("audit_logs")
+      .insert(log)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create audit log: ${error.message}`);
+    return data;
   }
 
   async getAuditLogs(limit = 100): Promise<AuditLog[]> {
-    return await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
+    const { data } = await supabaseServer
+      .from("audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return data || [];
   }
 
   async getUserAuditLogs(userId: string, limit = 50): Promise<AuditLog[]> {
-    return await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.createdAt)).limit(limit);
+    const { data } = await supabaseServer
+      .from("audit_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return data || [];
   }
 
   async createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
-    const result = await db.insert(subscriptionPlans).values(plan).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("subscription_plans")
+      .insert(plan)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create subscription plan: ${error.message}`);
+    return data;
   }
 
   async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-    return await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.active, true));
+    const { data } = await supabaseServer
+      .from("subscription_plans")
+      .select("*")
+      .eq("active", true);
+    return data || [];
   }
 
   async getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined> {
-    const result = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("subscription_plans")
+      .select("*")
+      .eq("id", id)
+      .single();
+    return data || undefined;
   }
 
   async createUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription> {
-    const result = await db.insert(userSubscriptions).values(subscription).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("user_subscriptions")
+      .insert(subscription)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create user subscription: ${error.message}`);
+    return data;
   }
 
   async getUserSubscriptions(userId: string): Promise<UserSubscription[]> {
-    return await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId)).orderBy(desc(userSubscriptions.createdAt));
+    const { data } = await supabaseServer
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    return data || [];
   }
 
   async updateUserSubscription(id: string, updates: Partial<InsertUserSubscription>): Promise<UserSubscription | undefined> {
-    const result = await db.update(userSubscriptions).set(updates).where(eq(userSubscriptions.id, id)).returning();
-    return result[0];
+    const { data } = await supabaseServer
+      .from("user_subscriptions")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async getAllSiteContent(): Promise<SiteContent[]> {
-    return await db.select().from(siteContent).orderBy(siteContent.section, siteContent.sortOrder);
+    const { data } = await supabaseServer
+      .from("site_content")
+      .select("*")
+      .order("section", { ascending: true })
+      .order("sort_order", { ascending: true });
+    return data || [];
   }
 
   async getSiteContentBySection(section: string): Promise<SiteContent[]> {
-    return await db.select().from(siteContent).where(eq(siteContent.section, section)).orderBy(siteContent.sortOrder);
+    const { data } = await supabaseServer
+      .from("site_content")
+      .select("*")
+      .eq("section", section)
+      .order("sort_order", { ascending: true });
+    return data || [];
   }
 
   async getSiteContentByKey(key: string): Promise<SiteContent | undefined> {
-    const result = await db.select().from(siteContent).where(eq(siteContent.key, key)).limit(1);
-    return result[0];
+    const { data } = await supabaseServer
+      .from("site_content")
+      .select("*")
+      .eq("key", key)
+      .single();
+    return data || undefined;
   }
 
   async createSiteContent(content: InsertSiteContent): Promise<SiteContent> {
-    const result = await db.insert(siteContent).values(content).returning();
-    return result[0];
+    const { data, error } = await supabaseServer
+      .from("site_content")
+      .insert(content)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create site content: ${error.message}`);
+    return data;
   }
 
   async updateSiteContent(id: string, updates: Partial<InsertSiteContent>): Promise<SiteContent | undefined> {
-    const updated = { ...updates, updatedAt: new Date() };
-    const result = await db.update(siteContent).set(updated).where(eq(siteContent.id, id)).returning();
-    return result[0];
+    const updated = { ...updates, updated_at: new Date().toISOString() };
+    const { data } = await supabaseServer
+      .from("site_content")
+      .update(updated)
+      .eq("id", id)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async updateSiteContentByKey(key: string, value: string): Promise<SiteContent | undefined> {
-    const updated = { value, updatedAt: new Date() };
-    const result = await db.update(siteContent).set(updated).where(eq(siteContent.key, key)).returning();
-    return result[0];
+    const updated = { value, updated_at: new Date().toISOString() };
+    const { data } = await supabaseServer
+      .from("site_content")
+      .update(updated)
+      .eq("key", key)
+      .select()
+      .single();
+    return data || undefined;
   }
 
   async deleteSiteContent(id: string): Promise<boolean> {
-    const result = await db.delete(siteContent).where(eq(siteContent.id, id)).returning();
-    return result.length > 0;
+    const { error } = await supabaseServer
+      .from("site_content")
+      .delete()
+      .eq("id", id);
+    return !error;
   }
 }
 

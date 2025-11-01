@@ -1,13 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
-
-declare module "express-session" {
-  interface SessionData {
-    adminId?: string;
-    userId?: string;
-    sessionCartId?: string;
-  }
-}
+import signature from "cookie-signature";
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 
@@ -20,6 +13,8 @@ if (!process.env.ADMIN_PASSWORD_HASH && process.env.NODE_ENV === "production") {
   console.warn("⚠️  Generate hash: node -e \"console.log(require('crypto').createHash('sha256').update('YOUR_PASSWORD').digest('hex'))\"\n");
 }
 
+const SESSION_SECRET = process.env.SESSION_SECRET || "dev-secret-change-in-production";
+
 export function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
@@ -29,38 +24,48 @@ export function verifyAdmin(username: string, password: string): boolean {
   return username === ADMIN_USERNAME && passwordHash === ADMIN_PASSWORD_HASH;
 }
 
+// Sign a cookie value with SESSION_SECRET
+function signCookie(value: string): string {
+  return signature.sign(value, SESSION_SECRET);
+}
+
+// Unsign and verify a signed cookie
+function unsignCookie(signedValue: string): string | false {
+  return signature.unsign(signedValue, SESSION_SECRET);
+}
+
+// Check if request has valid admin cookie
+export function isAdminAuthenticated(req: Request): boolean {
+  const adminCookie = req.cookies?.['admin_session'];
+  if (!adminCookie) return false;
+  
+  const unsigned = unsignCookie(adminCookie);
+  return unsigned === "admin";
+}
+
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  if (req.session?.adminId) {
+  if (isAdminAuthenticated(req)) {
     next();
   } else {
     res.status(401).json({ error: "Unauthorized: Admin access required" });
   }
 }
 
-export async function loginAdmin(req: Request, username: string, password: string): Promise<{ success: boolean; message: string }> {
+export async function loginAdmin(req: Request, res: Response, username: string, password: string): Promise<{ success: boolean; message: string }> {
   if (verifyAdmin(username, password)) {
-    return new Promise((resolve) => {
-      if (req.session) {
-        req.session.regenerate((err) => {
-          if (err) {
-            console.error("Session regeneration error:", err);
-            resolve({ success: false, message: "Session error" });
-            return;
-          }
-          req.session.adminId = "admin";
-          req.session.save((saveErr) => {
-            if (saveErr) {
-              console.error("Session save error:", saveErr);
-              resolve({ success: false, message: "Session save error" });
-              return;
-            }
-            resolve({ success: true, message: "Login successful" });
-          });
-        });
-      } else {
-        resolve({ success: false, message: "No session available" });
-      }
+    // Set signed cookie for admin auth (stateless, no DB)
+    const signedCookie = signCookie("admin");
+    res.cookie('admin_session', signedCookie, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
+    return { success: true, message: "Login successful" };
   }
   return { success: false, message: "Invalid credentials" };
+}
+
+export function logoutAdmin(req: Request, res: Response): void {
+  res.clearCookie('admin_session');
 }

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage-db";
 import { ZodError } from "zod";
-import { requireAdmin, loginAdmin } from "./auth";
+import { requireAdmin, loginAdmin, logoutAdmin, isAdminAuthenticated } from "./auth";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 
@@ -617,7 +617,7 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
         return res.status(400).json({ error: "Username and password required" });
       }
       
-      const result = await loginAdmin(req, username, password);
+      const result = await loginAdmin(req, res, username, password);
       
       if (result.success) {
         res.json({ success: true, message: result.message });
@@ -630,14 +630,12 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
   });
 
   app.post("/api/admin/logout", (req, res) => {
-    if (req.session) {
-      req.session.adminId = undefined;
-    }
+    logoutAdmin(req, res);
     res.json({ success: true });
   });
 
   app.get("/api/admin/check", (req, res) => {
-    res.json({ isAdmin: !!req.session?.adminId });
+    res.json({ isAdmin: isAdminAuthenticated(req) });
   });
 
   // Admin Dashboard APIs
@@ -741,10 +739,15 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
 
   app.post("/api/admin/services", requireAdmin, async (req, res) => {
     try {
+      console.log("Creating service with data:", req.body);
       const service = await storage.createService(req.body);
       res.json(service);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create service" });
+      console.error("Failed to create service:", error);
+      res.status(500).json({ 
+        error: "Failed to create service",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -780,10 +783,15 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
   // Category Management APIs
   app.post("/api/admin/categories", requireAdmin, async (req, res) => {
     try {
+      console.log("Creating category with data:", req.body);
       const category = await storage.createCategory(req.body);
       res.json(category);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create category" });
+      console.error("Failed to create category:", error);
+      res.status(500).json({ 
+        error: "Failed to create category",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

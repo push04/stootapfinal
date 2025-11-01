@@ -1,32 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
 import { registerRoutes } from "./routes";
 import { createServer, type Server } from "http";
-import connectPgSimple from "connect-pg-simple";
-import { Pool } from "@neondatabase/serverless";
+import cookieParser from "cookie-parser";
 
 declare module 'http' {
   interface IncomingMessage {
     rawBody?: Buffer
   }
-}
-
-const PgSession = connectPgSimple(session);
-
-function getConnectionString(): string {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL;
-  }
-
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabasePassword = process.env.SUPABASE_DB_PASSWORD;
-
-  if (!supabaseUrl || !supabasePassword) {
-    throw new Error("Either DATABASE_URL or SUPABASE_URL + SUPABASE_DB_PASSWORD must be provided");
-  }
-
-  const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '');
-  return `postgresql://postgres.${projectRef}:${supabasePassword}@aws-0-ap-south-1.pooler.supabase.com:6543/postgres`;
 }
 
 export async function createExpressApp(): Promise<{ app: express.Express; server: Server }> {
@@ -36,24 +16,8 @@ export async function createExpressApp(): Promise<{ app: express.Express; server
     throw new Error("SESSION_SECRET environment variable is required in production");
   }
 
-  const connectionString = getConnectionString();
-  const sessionPool = new Pool({ connectionString });
-
-  app.use(session({
-    store: new PgSession({
-      pool: sessionPool,
-      createTableIfMissing: true,
-      tableName: "session",
-    }),
-    secret: process.env.SESSION_SECRET || "dev-secret-change-in-production-" + Math.random(),
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-    },
-  }));
+  // Use cookie-parser for stateless auth (no DB-backed sessions)
+  app.use(cookieParser(process.env.SESSION_SECRET || "dev-secret-change-in-production"));
 
   app.use(express.json({
     verify: (req, _res, buf) => {

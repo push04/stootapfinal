@@ -5,7 +5,13 @@ import { seedDatabase } from "./seed";
 (async () => {
   // Seed database only in development
   if (process.env.NODE_ENV === "development") {
-    await seedDatabase();
+    try {
+      await seedDatabase();
+    } catch (error) {
+      console.error("⚠️  Failed to seed database. Make sure Supabase tables are created.");
+      console.error("   Run the schema.sql from supabase_schema/ in your Supabase dashboard");
+      console.error("   Error:", error);
+    }
   }
 
   const { app, server } = await createExpressApp();
