@@ -28,28 +28,17 @@ async function buildFunctions() {
         target: 'node20',
         format: 'esm',
         outfile,
-        external: [
-          '@neondatabase/serverless',
-          'pg-native',
-        ],
-        banner: {
-          js: `
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const require = createRequire(import.meta.url);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-`,
-        },
-        alias: {
-          '@shared': join(__dirname, 'shared'),
-          '@': join(__dirname, 'client', 'src'),
-        },
-        minify: false,
-        sourcemap: true,
-      });
+   external: [
+    '@neondatabase/serverless',
+    'pg-native',
+  ],
+  alias: {
+    '@shared': join(__dirname, 'shared'),
+    '@': join(__dirname, 'client', 'src'),
+  },
+  minify: false,
+  sourcemap: true,
+  })
 
       console.log(`✓ Built ${file}`);
     }
