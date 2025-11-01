@@ -122,7 +122,7 @@ export default function CategoryManagement({ categories, services, onUpdate }: C
   const handleDelete = async () => {
     if (!selectedCategory) return;
 
-    const servicesInCategory = services.filter(s => s.categoryId === selectedCategory.id).length;
+    const servicesInCategory = (services || []).filter(s => s.categoryId === selectedCategory.id).length;
     if (servicesInCategory > 0) {
       toast({
         title: "Cannot Delete Category",
@@ -291,7 +291,7 @@ export default function CategoryManagement({ categories, services, onUpdate }: C
                 <TableCell className="font-mono text-sm">{category.slug}</TableCell>
                 <TableCell>{category.sortOrder || 0}</TableCell>
                 <TableCell>
-                  {services.filter((s) => s.categoryId === category.id).length} services
+                  {(services || []).filter((s) => s.categoryId === category.id).length} services
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -380,9 +380,9 @@ export default function CategoryManagement({ categories, services, onUpdate }: C
             <DialogTitle>Delete Category</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete "{selectedCategory?.name}"? This action cannot be undone.
-              {selectedCategory && services.filter(s => s.categoryId === selectedCategory.id).length > 0 && (
+              {selectedCategory && (services || []).filter(s => s.categoryId === selectedCategory.id).length > 0 && (
                 <span className="block mt-2 text-destructive font-semibold">
-                  Warning: This category has {services.filter(s => s.categoryId === selectedCategory.id).length} service(s).
+                  Warning: This category has {(services || []).filter(s => s.categoryId === selectedCategory.id).length} service(s).
                   Please move or delete them first.
                 </span>
               )}

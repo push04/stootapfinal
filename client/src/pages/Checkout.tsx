@@ -33,6 +33,11 @@ export default function Checkout() {
     customerEmail: "",
     customerPhone: "",
     customerAddress: "",
+    companyName: "",
+    gstNumber: "",
+    city: "",
+    state: "",
+    pincode: "",
   });
 
   const sessionId = localStorage.getItem("sessionId") || "";
@@ -100,9 +105,29 @@ export default function Checkout() {
       return;
     }
 
+    if (cartItems.length === 0) {
+      setError("Your cart is empty. Please add services before checking out.");
+      return;
+    }
+
+    // Validate cart items have service data
+    const invalidItems = cartItems.filter(item => !item.service || !item.service.basePriceInr);
+    if (invalidItems.length > 0) {
+      setError("Some items in your cart are invalid. Please refresh the page and try again.");
+      return;
+    }
+
     setSubmitting(true);
 
     const { subtotal, gst, total } = calculateTotals();
+
+    // Build full address
+    const fullAddress = [
+      formData.customerAddress,
+      formData.city,
+      formData.state,
+      formData.pincode
+    ].filter(Boolean).join(', ');
 
     const orderItems = cartItems.map(item => ({
       serviceId: item.serviceId,
@@ -125,7 +150,7 @@ export default function Checkout() {
           customerName: formData.customerName,
           customerEmail: formData.customerEmail,
           customerPhone: formData.customerPhone,
-          customerAddress: formData.customerAddress,
+          customerAddress: fullAddress,
           items: orderItems,
         }),
       });
@@ -154,6 +179,9 @@ export default function Checkout() {
             orderId: order.id,
             customerName: formData.customerName,
             customerEmail: formData.customerEmail,
+            companyName: formData.companyName || "N/A",
+            gstNumber: formData.gstNumber || "N/A",
+            phone: formData.customerPhone,
           },
         }),
       });
@@ -226,7 +254,13 @@ export default function Checkout() {
       paymentObject.open();
     } catch (err: any) {
       console.error("Checkout error:", err);
-      setError(err.message || "An error occurred while placing your order");
+      const errorMessage = err.message || err.error || "An error occurred while placing your order. Please check your details and try again.";
+      setError(errorMessage);
+      toast({
+        title: "Checkout Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
       setSubmitting(false);
     }
   };
@@ -347,24 +381,104 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
+                    <Label htmlFor="company">Company Name</Label>
+                    <Input
+                      id="company"
+                      type="text"
+                      value={formData.companyName}
+                      onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                      placeholder="Your Company Pvt. Ltd."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="gst">GST Number (Optional)</Label>
+                    <Input
+                      id="gst"
+                      type="text"
+                      value={formData.gstNumber}
+                      onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value.toUpperCase() })}
+                      placeholder="22AAAAA0000A1Z5"
+                      maxLength={15}
+                    />
+                    <p className="text-xs text-muted-foreground">Enter if you have GST registration for tax credit</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Street Address *</Label>
                     <Textarea
                       id="address"
+                      required
                       value={formData.customerAddress}
                       onChange={(e) => setFormData({ ...formData, customerAddress: e.target.value })}
-                      placeholder="Street address, city, state, PIN code"
-                      rows={3}
+                      placeholder="Building number, street name, area"
+                      rows={2}
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City *</Label>
+                      <Input
+                        id="city"
+                        type="text"
+                        required
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        placeholder="Mumbai"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="state">State *</Label>
+                      <Input
+                        id="state"
+                        type="text"
+                        required
+                        value={formData.state}
+                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                        placeholder="Maharashtra"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pincode">PIN Code *</Label>
+                      <Input
+                        id="pincode"
+                        type="text"
+                        required
+                        value={formData.pincode}
+                        onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                        placeholder="400001"
+                        maxLength={6}
+                        pattern="[0-9]{6}"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                      <input type="checkbox" id="terms" required className="h-4 w-4 rounded border-gray-300" />
+                      <label htmlFor="terms">
+                        I agree to the <a href="/terms" className="text-primary underline">Terms & Conditions</a> and <a href="/privacy" className="text-primary underline">Privacy Policy</a>
+                      </label>
+                    </div>
                   </div>
 
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={submitting}
+                    disabled={submitting || !razorpayLoaded}
                     size="lg"
                   >
-                    {submitting ? "Placing Order..." : `Place Order - ₹${total.toFixed(2)}`}
+                    {!razorpayLoaded ? "Loading Payment System..." : submitting ? "Placing Order..." : `Proceed to Payment - ₹${total.toFixed(2)}`}
                   </Button>
+                  
+                  {!razorpayLoaded && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      Secure payment powered by Razorpay
+                    </p>
+                  )}
                 </form>
               </CardContent>
             </Card>

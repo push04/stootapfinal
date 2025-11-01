@@ -173,15 +173,15 @@ export default function ServiceManagement({ services, categories, onUpdate }: Se
   const openEditDialog = (service: any) => {
     setSelectedService(service);
     setFormData({
-      name: service.name,
-      slug: service.slug,
-      categoryId: service.categoryId,
-      basePriceInr: service.basePriceInr.toString(),
-      etaDays: service.etaDays.toString(),
-      summary: service.summary,
+      name: service.name || "",
+      slug: service.slug || "",
+      categoryId: service.categoryId || "",
+      basePriceInr: service.basePriceInr ? service.basePriceInr.toString() : "",
+      etaDays: service.etaDays ? service.etaDays.toString() : "",
+      summary: service.summary || "",
       longDescription: service.longDescription || "",
       sku: service.sku || "",
-      active: service.active,
+      active: service.active ?? true,
     });
     setEditDialogOpen(true);
   };

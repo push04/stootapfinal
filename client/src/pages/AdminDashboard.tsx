@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  LogOut, DollarSign, ShoppingCart, Users, Package, Download, Search, Eye, 
+  LogOut, DollarSign, ShoppingCart, Users, User, Package, Download, Search, Eye, 
   Edit, Trash2, CheckCircle, XCircle, TrendingUp, TrendingDown, Activity,
   RefreshCw, Filter, MoreVertical, Copy, Mail, Phone, MapPin, Calendar,
   CreditCard, AlertCircle, Clock, CheckCheck, Settings, BarChart3
@@ -23,6 +23,8 @@ import {
 import { format } from "date-fns";
 import ServiceManagement from "@/components/admin/ServiceManagement";
 import CategoryManagement from "@/components/admin/CategoryManagement";
+import UserManagement from "@/components/admin/UserManagement";
+import OrderManagement from "@/components/admin/OrderManagement";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +54,124 @@ interface Analytics {
   activeServices: number;
   recentOrders: any[];
   recentLeads: any[];
+}
+
+function APIIntegrationCheck() {
+  const [integrationStatus, setIntegrationStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkIntegrations();
+  }, []);
+
+  const checkIntegrations = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/admin/integration-status");
+      if (response.ok) {
+        const data = await response.json();
+        setIntegrationStatus(data);
+      }
+    } catch (error) {
+      console.error("Failed to check integrations", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <RefreshCw className="h-5 w-5 animate-spin text-primary" />
+          <span>Checking integrations...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const integrations = [
+    {
+      name: "Razorpay",
+      description: "Payment Gateway",
+      status: integrationStatus?.razorpay?.configured,
+      error: integrationStatus?.razorpay?.error,
+      icon: CreditCard,
+    },
+    {
+      name: "OpenRouter",
+      description: "AI Concierge",
+      status: integrationStatus?.openrouter?.configured,
+      error: integrationStatus?.openrouter?.error,
+      icon: Activity,
+    },
+    {
+      name: "Supabase",
+      description: "Database & Auth",
+      status: integrationStatus?.supabase?.configured,
+      error: integrationStatus?.supabase?.error,
+      icon: Package,
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Service Status</h3>
+        <Button variant="outline" size="sm" onClick={checkIntegrations}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+      
+      <div className="grid gap-4">
+        {integrations.map((integration) => {
+          const Icon = integration.icon;
+          return (
+            <Card key={integration.name}>
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5">
+                      <Icon className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-semibold">{integration.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {integration.description}
+                      </p>
+                      {integration.error && (
+                        <div className="flex items-start gap-2 mt-2 p-2 bg-destructive/10 rounded text-sm">
+                          <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                          <div>
+                            <p className="font-medium text-destructive">Error</p>
+                            <p className="text-destructive/80 text-xs">{integration.error}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    {integration.status ? (
+                      <Badge className="bg-green-500">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Connected
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive">
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Not Configured
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function AdminDashboard() {
@@ -515,15 +635,36 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="orders" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-            <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
-            <TabsTrigger value="leads">Leads ({leads.length})</TabsTrigger>
-            <TabsTrigger value="services">Services ({services.length})</TabsTrigger>
-            <TabsTrigger value="categories">Categories ({categories.length})</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto">
+            <TabsTrigger value="orders">
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Orders
+            </TabsTrigger>
+            <TabsTrigger value="users">
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="leads">Leads</TabsTrigger>
+            <TabsTrigger value="services">Services</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </TabsTrigger>
           </TabsList>
 
-          {/* Orders Tab with Enhanced Features */}
+          {/* Orders Tab with Enhanced Management */}
           <TabsContent value="orders" className="space-y-4">
+            <OrderManagement />
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-4">
+            <UserManagement />
+          </TabsContent>
+
+          {/* Legacy Orders Tab Content - REMOVED */}
+          <TabsContent value="orders-legacy" className="space-y-4">
             <Card>
               <CardHeader>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -685,10 +826,10 @@ export default function AdminDashboard() {
                           <TableCell className="text-xs">
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              {format(new Date(order.createdAt), "MMM d, yyyy")}
+                              {order.createdAt ? format(new Date(order.createdAt), "MMM d, yyyy") : 'N/A'}
                             </div>
                             <div className="text-muted-foreground">
-                              {format(new Date(order.createdAt), "HH:mm")}
+                              {order.createdAt ? format(new Date(order.createdAt), "HH:mm") : ''}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -816,7 +957,7 @@ export default function AdminDashboard() {
                             <p className="truncate text-sm">{lead.message}</p>
                           </TableCell>
                           <TableCell className="text-xs">
-                            {format(new Date(lead.createdAt), "MMM d, yyyy HH:mm")}
+                            {lead.createdAt ? format(new Date(lead.createdAt), "MMM d, yyyy HH:mm") : 'N/A'}
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
@@ -855,7 +996,7 @@ export default function AdminDashboard() {
                                     <div>
                                       <Label>Received</Label>
                                       <p className="text-sm text-muted-foreground">
-                                        {selectedLead && format(new Date(selectedLead.createdAt), "MMMM d, yyyy 'at' HH:mm")}
+                                        {selectedLead && selectedLead.createdAt && format(new Date(selectedLead.createdAt), "MMMM d, yyyy 'at' HH:mm")}
                                       </p>
                                     </div>
                                   </div>
@@ -957,6 +1098,21 @@ export default function AdminDashboard() {
           <TabsContent value="categories" className="space-y-4">
             <CategoryManagement categories={categories} onUpdate={loadCategories} />
           </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>API Integration Status</CardTitle>
+                <CardDescription>
+                  Check the status of external service integrations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <APIIntegrationCheck />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -1052,7 +1208,7 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <p className="text-muted-foreground text-xs">Created</p>
-                          <p className="font-medium">{format(new Date(selectedOrder.createdAt), "PPpp")}</p>
+                          <p className="font-medium">{selectedOrder.createdAt ? format(new Date(selectedOrder.createdAt), "PPpp") : 'N/A'}</p>
                         </div>
                       </div>
                     </div>
