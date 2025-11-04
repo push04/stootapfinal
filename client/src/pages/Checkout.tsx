@@ -207,6 +207,16 @@ export default function Checkout() {
       });
 
       if (!razorpayOrderResponse.ok) {
+        // Update order status to failed
+        try {
+          await fetch(`/api/orders/${order.id}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "failed", sessionId }),
+          });
+        } catch (err) {
+          console.error("Error updating order status:", err);
+        }
         const errorData = await razorpayOrderResponse.json();
         throw new Error(errorData.details || errorData.error || "Failed to create payment order");
       }
@@ -234,6 +244,16 @@ export default function Checkout() {
             });
 
             if (!verifyResponse.ok) {
+              // Update order status to failed
+              try {
+                await fetch(`/api/orders/${order.id}/status`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ status: "failed", sessionId }),
+                });
+              } catch (err) {
+                console.error("Error updating order status:", err);
+              }
               throw new Error("Payment verification failed");
             }
 
@@ -247,6 +267,16 @@ export default function Checkout() {
             setTimeout(() => setLocation("/"), 3000);
           } catch (err: any) {
             console.error("Payment verification error:", err);
+            // Update order status to failed if verification fails
+            try {
+              await fetch(`/api/orders/${order.id}/status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "failed", sessionId }),
+              });
+            } catch (statusErr) {
+              console.error("Error updating order status:", statusErr);
+            }
             setError("Payment verification failed. Please contact support with your order ID: " + order.id);
             setSubmitting(false);
           }
@@ -263,21 +293,37 @@ export default function Checkout() {
           color: "#6366f1",
         },
         modal: {
-          ondismiss: function () {
+          ondismiss: async function () {
+            // Update order status to cancelled
+            try {
+              const statusResponse = await fetch(`/api/orders/${order.id}/status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "cancelled", sessionId }),
+              });
+              
+              if (!statusResponse.ok) {
+                console.error("Failed to update order status");
+              }
+            } catch (err) {
+              console.error("Error updating order status:", err);
+            }
+            
             toast({
               title: "Payment Cancelled",
-              description: `Your order ${order.id} has been created and saved. You can complete payment later by contacting support.`,
+              description: `Your order ${order.id} has been cancelled. You can place a new order anytime.`,
               variant: "default",
             });
             
-            fetch("/api/cart/clear", {
+            await fetch("/api/cart/clear", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ sessionId }),
             });
             
-            setSuccess(true);
-            setTimeout(() => setLocation("/profile"), 2000);
+            setSuccess(false);
+            setSubmitting(false);
+            setTimeout(() => setLocation("/"), 2000);
           },
           onhidden: function() {
             setSubmitting(false);
@@ -289,9 +335,25 @@ export default function Checkout() {
       
       paymentObject.on('payment.failed', async function (response: any){
         console.log("Payment failed:", response);
+        
+        // Update order status to failed
+        try {
+          const statusResponse = await fetch(`/api/orders/${order.id}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "failed", sessionId }),
+          });
+          
+          if (!statusResponse.ok) {
+            console.error("Failed to update order status");
+          }
+        } catch (err) {
+          console.error("Error updating order status:", err);
+        }
+        
         toast({
           title: "Payment Failed",
-          description: `Your order ${order.id} has been saved. Please contact support to complete payment.`,
+          description: `Payment failed: ${response.error?.description || "Unknown error"}. Order ${order.id} saved with failed status.`,
           variant: "destructive",
         });
         
@@ -301,8 +363,9 @@ export default function Checkout() {
           body: JSON.stringify({ sessionId }),
         });
         
-        setSuccess(true);
-        setTimeout(() => setLocation("/profile"), 2000);
+        setSuccess(false);
+        setSubmitting(false);
+        setTimeout(() => setLocation("/profile"), 3000);
       });
       
       paymentObject.open();
