@@ -6,7 +6,6 @@ import { requireAdmin, loginAdmin, logoutAdmin, isAdminAuthenticated } from "./a
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { supabaseServer } from "./supabase-server";
-import { toCamelCase } from "./storage-db";
 import { validateRequest, commonSchemas, rateLimit } from "./validation";
 
 // AI Concierge configuration
@@ -926,12 +925,51 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     }
   });
 
-  app.get("/api/admin/leads", requireAdmin, async (_req, res) => {
+  app.get("/api/admin/leads", requireAdmin, async (req, res) => {
     try {
       const leads = await storage.getAllLeads();
-      res.json(leads);
+      
+      // Support search and filtering
+      let filteredLeads = leads;
+      const { search, kind, role } = req.query;
+      
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        filteredLeads = filteredLeads.filter(lead =>
+          lead.name.toLowerCase().includes(searchLower) ||
+          lead.email.toLowerCase().includes(searchLower) ||
+          lead.phone.includes(searchLower) ||
+          lead.message.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      if (kind && kind !== 'all') {
+        filteredLeads = filteredLeads.filter(lead => lead.kind === kind);
+      }
+      
+      if (role && role !== 'all') {
+        filteredLeads = filteredLeads.filter(lead => lead.role === role);
+      }
+      
+      res.json(filteredLeads);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch leads" });
+    }
+  });
+
+  app.get("/api/admin/leads/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const leads = await storage.getAllLeads();
+      const lead = leads.find(l => l.id === id);
+      
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      res.json(lead);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch lead details" });
     }
   });
 
