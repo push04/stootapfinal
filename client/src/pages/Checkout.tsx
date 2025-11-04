@@ -143,7 +143,7 @@ export default function Checkout() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
-          status: "pending",
+          status: "payment_processing",
           subtotalInr: subtotal.toFixed(2),
           gstInr: gst.toFixed(2),
           totalInr: total.toFixed(2),
@@ -162,10 +162,30 @@ export default function Checkout() {
 
       const order = await orderResponse.json();
       
+      // Check if payment gateway is available
       const razorpayKeyResponse = await fetch("/api/payment/razorpay-key");
-      if (!razorpayKeyResponse.ok) {
-        throw new Error("Payment system not configured. Please contact support.");
+      
+      if (!razorpayKeyResponse.ok || razorpayKeyResponse.status === 503) {
+        // Payment gateway is disabled - order is already created, clear cart and redirect
+        console.log("Payment gateway disabled, order created:", order.id);
+        
+        await fetch("/api/cart/clear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+        
+        toast({
+          title: "Order Created Successfully",
+          description: `Your order (ID: ${order.id.slice(0, 8)}) has been created. Our team will contact you shortly to complete the payment process.`,
+          duration: 6000,
+        });
+        
+        setSuccess(true);
+        setTimeout(() => setLocation("/profile"), 2000);
+        return;
       }
+      
       const { key } = await razorpayKeyResponse.json();
 
       const razorpayOrderResponse = await fetch("/api/payment/create-order", {
@@ -244,20 +264,54 @@ export default function Checkout() {
         },
         modal: {
           ondismiss: function () {
-            setError("Payment cancelled. Your order has been saved and you can complete payment later.");
-            setSubmitting(false);
+            toast({
+              title: "Payment Cancelled",
+              description: `Your order ${order.id} has been created and saved. You can complete payment later by contacting support.`,
+              variant: "default",
+            });
+            
+            fetch("/api/cart/clear", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sessionId }),
+            });
+            
+            setSuccess(true);
+            setTimeout(() => setLocation("/profile"), 2000);
           },
+          onhidden: function() {
+            setSubmitting(false);
+          }
         },
       };
 
       const paymentObject = new window.Razorpay(options);
+      
+      paymentObject.on('payment.failed', async function (response: any){
+        console.log("Payment failed:", response);
+        toast({
+          title: "Payment Failed",
+          description: `Your order ${order.id} has been saved. Please contact support to complete payment.`,
+          variant: "destructive",
+        });
+        
+        await fetch("/api/cart/clear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+        
+        setSuccess(true);
+        setTimeout(() => setLocation("/profile"), 2000);
+      });
+      
       paymentObject.open();
     } catch (err: any) {
       console.error("Checkout error:", err);
-      const errorMessage = err.message || err.error || "An error occurred while placing your order. Please check your details and try again.";
+      const errorMessage = err.message || err.error || "An error occurred. Please check your details and try again.";
       setError(errorMessage);
       toast({
-        title: "Checkout Failed",
+        title: "Checkout Error",
         description: errorMessage,
         variant: "destructive",
       });

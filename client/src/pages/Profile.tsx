@@ -239,13 +239,21 @@ export default function Profile() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      pending: "secondary",
-      processing: "default",
-      completed: "outline",
-      cancelled: "destructive",
+    const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string, className?: string }> = {
+      pending: { variant: "secondary", label: "Pending", className: "bg-gray-100 text-gray-700" },
+      payment_processing: { variant: "default", label: "Payment Processing", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" },
+      processing: { variant: "default", label: "Processing", className: "bg-blue-100 text-blue-700" },
+      paid: { variant: "outline", label: "Paid", className: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 border-green-300" },
+      completed: { variant: "outline", label: "Completed", className: "bg-green-100 text-green-700" },
+      cancelled: { variant: "destructive", label: "Cancelled" },
     };
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+    
+    const config = statusConfig[status] || { variant: "default", label: status };
+    return (
+      <Badge variant={config.variant} className={config.className}>
+        {config.label}
+      </Badge>
+    );
   };
 
   if (isLoading) {

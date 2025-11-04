@@ -39,10 +39,10 @@ export default function Home() {
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl lg:text-4xl font-bold font-heading mb-4">
-                Explore Our Services
+                Complete Business Solutions at Your Fingertips
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                From registration to growth, we've got every aspect of your business covered
+                Whether you're a student entrepreneur or scaling business, access expert services across registration, compliance, marketing, and more - all in one place.
               </p>
             </div>
 
@@ -70,33 +70,33 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="p-8 text-center">
+              <Card className="p-8 text-center hover:shadow-lg transition-shadow">
                 <div className="inline-flex p-4 rounded-2xl bg-primary/10 mb-4">
                   <Shield className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Trusted & Secure</h3>
-                <p className="text-muted-foreground">
-                  All payments secured by Razorpay with India-first compliance standards
+                <h3 className="text-xl font-semibold mb-3">Bank-Grade Security</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Enterprise-level encryption and Razorpay-secured payments ensure your data and transactions are always protected. India-compliant, globally trusted.
                 </p>
               </Card>
 
-              <Card className="p-8 text-center">
+              <Card className="p-8 text-center hover:shadow-lg transition-shadow">
                 <div className="inline-flex p-4 rounded-2xl bg-primary/10 mb-4">
                   <TrendingUp className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Growth Focused</h3>
-                <p className="text-muted-foreground">
-                  From startup to scale-up, our services grow with your business needs
+                <h3 className="text-xl font-semibold mb-3">Built to Scale with You</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Whether you're filing your first GST or expanding nationwide, our ecosystem of services adapts to your growth stage. Start small, scale smart.
                 </p>
               </Card>
 
-              <Card className="p-8 text-center">
+              <Card className="p-8 text-center hover:shadow-lg transition-shadow">
                 <div className="inline-flex p-4 rounded-2xl bg-primary/10 mb-4">
                   <Briefcase className="h-8 w-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Complete Platform</h3>
-                <p className="text-muted-foreground">
-                  300+ services covering every aspect of business launch and management
+                <h3 className="text-xl font-semibold mb-3">Everything Under One Roof</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Stop juggling multiple vendors. Access 300+ verified business services - from incorporation to intellectual property - through a single, intuitive dashboard.
                 </p>
               </Card>
             </div>
@@ -106,10 +106,10 @@ export default function Home() {
         <section className="py-16 lg:py-24 bg-gradient-to-b from-primary/5 to-background">
           <div className="mx-auto max-w-4xl px-4 lg:px-8 text-center">
             <h2 className="text-3xl lg:text-4xl font-bold font-heading mb-4">
-              Ready to Get Started?
+              Your Business Journey Starts Here
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Have questions or ready to begin your journey? Our team is here to help you every step of the way.
+              Join thousands of entrepreneurs who trust Stootap to handle their business needs. Get expert guidance, transparent pricing, and results you can count on.
             </p>
             <Link href="/contact">
               <Button size="lg" className="text-lg px-8">
