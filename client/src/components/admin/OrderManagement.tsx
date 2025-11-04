@@ -145,6 +145,7 @@ export default function OrderManagement() {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", class?: string }> = {
       pending: { variant: "secondary" },
       processing: { variant: "default", class: "bg-blue-500" },
+      payment_processing: { variant: "default", class: "bg-yellow-500 text-white" },
       completed: { variant: "outline", class: "bg-green-50 text-green-700 border-green-300" },
       cancelled: { variant: "destructive" },
     };
@@ -213,6 +214,7 @@ export default function OrderManagement() {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="payment_processing">Payment Processing</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
@@ -331,6 +333,7 @@ export default function OrderManagement() {
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="payment_processing">Payment Processing</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>

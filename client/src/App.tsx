@@ -8,7 +8,6 @@ import { CartProvider } from "@/contexts/CartContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
-import AIConcierge from "@/components/AIConcierge";
 import Home from "@/pages/Home";
 import Contact from "@/pages/Contact";
 import Login from "@/pages/Login";
@@ -87,7 +86,6 @@ function App() {
             <TooltipProvider>
               <Toaster />
               <Router />
-              <AIConcierge />
             </TooltipProvider>
           </CartProvider>
         </ThemeProvider>

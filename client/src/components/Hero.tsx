@@ -14,20 +14,24 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="text-5xl lg:text-6xl xl:text-7xl font-bold font-heading mb-6" 
+            className="text-5xl lg:text-6xl xl:text-7xl font-bold font-heading mb-6 leading-tight"
             data-testid="text-hero-title"
           >
-            Your Entire Business, Handled.
+            <span className="bg-gradient-to-r from-primary via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Launch Your Dream
+            </span>
+            <br />
+            <span className="text-foreground">Business in India</span>
           </motion.h1>
           
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className="text-lg lg:text-xl xl:text-2xl text-muted-foreground mb-12" 
+            className="text-lg lg:text-xl xl:text-2xl text-muted-foreground mb-12 leading-relaxed" 
             data-testid="text-hero-subtitle"
           >
-            From idea to IMPACT. From concept to running brand. 300+ services. One platform.
+            Everything you need to start, grow, and scale your business - from company registration to GST compliance, legal protection to digital marketing. <span className="font-semibold text-foreground">300+ expert services, one seamless platform.</span>
           </motion.h2>
 
           <motion.div 
