@@ -11,13 +11,15 @@ import {
   LogOut, DollarSign, ShoppingCart, Users, Package, TrendingUp, 
   Activity, RefreshCw, Settings, BarChart3, Clock, CheckCheck,
   Home, Layers, FolderKanban, FileText, Bell, CheckCircle2, XCircle,
-  Database, Wifi, AlertCircle, Zap, Download
+  Database, Wifi, AlertCircle, Zap, Download, ArrowUp, ArrowDown,
+  Target, Filter, Calendar as CalendarIcon, PieChart as PieChartIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import ServiceManagement from "@/components/admin/ServiceManagement";
 import CategoryManagement from "@/components/admin/CategoryManagement";
 import UserManagement from "@/components/admin/UserManagement";
 import OrderManagement from "@/components/admin/OrderManagement";
+import LeadManagement from "@/components/admin/LeadManagement";
 import { WelcomeChecklist } from "@/components/admin/WelcomeChecklist";
 import { NotificationBell } from "@/components/admin/NotificationBell";
 import { QuickActions } from "@/components/admin/QuickActions";
@@ -83,10 +85,17 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<any[]>([]);
   const [systemHealth, setSystemHealth] = useState<any>(null);
   const [healthLoading, setHealthLoading] = useState(false);
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('7d');
 
   useEffect(() => {
     loadAllData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      checkSystemHealth();
+    }
+  }, [activeTab]);
 
   const loadAllData = async () => {
     setLoading(true);
@@ -487,7 +496,7 @@ export default function AdminDashboard() {
         <Card className="shadow-lg">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <CardHeader className="border-b">
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto gap-2">
+              <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 h-auto gap-2">
                 <TabsTrigger value="overview" className="gap-2">
                   <Home className="h-4 w-4" />
                   <span className="hidden sm:inline">Overview</span>
@@ -495,6 +504,10 @@ export default function AdminDashboard() {
                 <TabsTrigger value="orders" className="gap-2">
                   <ShoppingCart className="h-4 w-4" />
                   <span className="hidden sm:inline">Orders</span>
+                </TabsTrigger>
+                <TabsTrigger value="leads" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">Leads</span>
                 </TabsTrigger>
                 <TabsTrigger value="services" className="gap-2">
                   <Package className="h-4 w-4" />
@@ -517,24 +530,53 @@ export default function AdminDashboard() {
 
             <CardContent className="p-6">
               <TabsContent value="overview" className="mt-0 space-y-6">
-                {/* Export Actions */}
-                <div className="flex flex-wrap gap-2 justify-end">
-                  <Button onClick={() => exportToCSV('analytics')} variant="outline" size="sm" className="gap-2" disabled={!analytics}>
-                    <Download className="h-4 w-4" />
-                    Export Analytics
-                  </Button>
-                  <Button onClick={() => exportToCSV('orders')} variant="outline" size="sm" className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Export Orders
-                  </Button>
-                  <Button onClick={() => exportToCSV('services')} variant="outline" size="sm" className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Export Services
-                  </Button>
-                  <Button onClick={() => exportToCSV('users')} variant="outline" size="sm" className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Export Users
-                  </Button>
+                {/* Time Range Selector & Export Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">Time Period:</span>
+                    <div className="flex rounded-lg border">
+                      <Button
+                        onClick={() => setTimeRange('7d')}
+                        variant={timeRange === '7d' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="rounded-r-none"
+                      >
+                        7 Days
+                      </Button>
+                      <Button
+                        onClick={() => setTimeRange('30d')}
+                        variant={timeRange === '30d' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="rounded-none border-x"
+                      >
+                        30 Days
+                      </Button>
+                      <Button
+                        onClick={() => setTimeRange('90d')}
+                        variant={timeRange === '90d' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="rounded-l-none"
+                      >
+                        90 Days
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={() => exportToCSV('analytics')} variant="outline" size="sm" className="gap-2" disabled={!analytics}>
+                      <Download className="h-4 w-4" />
+                      <span className="hidden md:inline">Export Analytics</span>
+                    </Button>
+                    <Button onClick={() => exportToCSV('orders')} variant="outline" size="sm" className="gap-2">
+                      <Download className="h-4 w-4" />
+                      <span className="hidden md:inline">Export Orders</span>
+                    </Button>
+                    <Button onClick={() => exportToCSV('services')} variant="outline" size="sm" className="gap-2">
+                      <Download className="h-4 w-4" />
+                      <span className="hidden md:inline">Export Services</span>
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Charts Section - Using REAL DATA */}
@@ -788,6 +830,10 @@ export default function AdminDashboard() {
 
               <TabsContent value="orders" className="mt-0">
                 <OrderManagement />
+              </TabsContent>
+
+              <TabsContent value="leads" className="mt-0">
+                <LeadManagement />
               </TabsContent>
 
               <TabsContent value="services" className="mt-0">
