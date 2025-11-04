@@ -25,6 +25,11 @@ import NotFound from "@/pages/NotFound";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import Checkout from "@/pages/Checkout";
+import AboutUs from "@/pages/AboutUs";
+import Careers from "@/pages/Careers";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
+import RefundPolicy from "@/pages/RefundPolicy";
 
 function Router() {
   return (
@@ -40,6 +45,11 @@ function Router() {
       <Route path="/services" component={Services} />
       <Route path="/services/:slug" component={ServiceDetail} />
       <Route path="/students" component={Students} />
+      <Route path="/about" component={AboutUs} />
+      <Route path="/careers" component={Careers} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
+      <Route path="/refund-policy" component={RefundPolicy} />
       <Route path="/admin/login" component={AdminLogin} />
       
       <Route path="/dashboard">

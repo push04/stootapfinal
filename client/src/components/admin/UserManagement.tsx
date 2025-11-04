@@ -31,7 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Search, Mail, Phone, Calendar, RefreshCw, UserPlus, Edit, Trash2 } from "lucide-react";
+import { Users, Search, Mail, Phone, Calendar, RefreshCw, UserPlus, Edit, Trash2, MessageSquare, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 
 interface User {
@@ -51,8 +52,13 @@ export default function UserManagement() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [messageForm, setMessageForm] = useState({
+    title: "",
+    message: "",
+  });
   
   const [formData, setFormData] = useState({
     fullName: "",
@@ -225,6 +231,65 @@ export default function UserManagement() {
     setDeleteDialogOpen(true);
   };
 
+  const openMessageDialog = (user: User) => {
+    setSelectedUser(user);
+    setMessageForm({
+      title: "",
+      message: "",
+    });
+    setMessageDialogOpen(true);
+  };
+
+  const handleSendMessage = async () => {
+    if (!selectedUser || !messageForm.title || !messageForm.message) {
+      toast({
+        title: "Validation Error",
+        description: "Please provide both title and message",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/admin/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          title: messageForm.title,
+          message: messageForm.message,
+          type: "admin_message",
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Message Sent",
+          description: `Message sent to ${selectedUser.fullName} successfully.`,
+        });
+        setMessageDialogOpen(false);
+        setSelectedUser(null);
+        setMessageForm({ title: "", message: "" });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.error || "Failed to send message",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "An error occurred while sending the message",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const filteredUsers = users.filter((user) =>
     user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -337,6 +402,15 @@ export default function UserManagement() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openMessageDialog(user)}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            Message
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
