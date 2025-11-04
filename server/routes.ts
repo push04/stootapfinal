@@ -176,10 +176,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payment API (Razorpay)
+  // Payment API (Razorpay) - Optional
   app.get("/api/payment/razorpay-key", (_req, res) => {
     if (!RAZORPAY_KEY_ID) {
-      return res.status(500).json({ error: "Razorpay not configured" });
+      // Return a clear message that payment is disabled
+      return res.status(503).json({ 
+        error: "Payment gateway is currently disabled. Orders will be processed manually. Please contact support to complete your order." 
+      });
     }
     res.json({ key: RAZORPAY_KEY_ID });
   });
@@ -187,8 +190,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/payment/create-order", async (req, res) => {
     try {
       if (!razorpayInstance) {
-        console.error("Razorpay not configured - missing credentials");
-        return res.status(500).json({ error: "Razorpay not configured. Please contact support." });
+        console.error("Razorpay not configured - payment gateway disabled");
+        return res.status(503).json({ 
+          error: "Payment gateway is currently disabled",
+          message: "Your order has been saved. Our team will contact you to complete the payment process."
+        });
       }
 
       const { amount, currency = "INR", receipt, notes } = req.body;
@@ -312,7 +318,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", async (req, res) => {
     try {
       const { insertOrderSchema } = await import("@shared/schema");
-      const validated = insertOrderSchema.parse(req.body);
+      
+      // Automatically add userId if user is authenticated
+      const orderData = {
+        ...req.body,
+        userId: req.user?.id || null, // Include userId from authenticated session
+      };
+      
+      const validated = insertOrderSchema.parse(orderData);
       
       const order = await storage.createOrder(validated);
       
@@ -973,16 +986,15 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     }
   });
 
-  // Get all registered users
+  // User Management APIs
   app.get("/api/admin/users", requireAdmin, async (_req, res) => {
     try {
-      // We'll need to add this method to storage
       const { data } = await supabaseServer
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false });
       
-      // Transform to camelCase and remove sensitive data
+      // Transform to camelCase
       const users = (data || []).map((user: any) => {
         return toCamelCase(user);
       });
@@ -994,6 +1006,79 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     }
   });
 
+  app.post("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+      const userData = toSnakeCase(req.body);
+      const { data, error } = await supabaseServer
+        .from("profiles")
+        .insert(userData)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      res.json(toCamelCase(data));
+    } catch (error) {
+      console.error("Create user error:", error);
+      res.status(500).json({ 
+        error: "Failed to create user",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = toSnakeCase(req.body);
+      
+      const { data, error } = await supabaseServer
+        .from("profiles")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      if (!data) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json(toCamelCase(data));
+    } catch (error) {
+      console.error("Update user error:", error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const { error } = await supabaseServer
+        .from("profiles")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete user error:", error);
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
+  // Category Management APIs - GET endpoint
+  app.get("/api/admin/categories", requireAdmin, async (_req, res) => {
+    try {
+      const categories = await storage.getAllCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Get categories error:", error);
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  // Service Management APIs
   app.get("/api/admin/services", requireAdmin, async (_req, res) => {
     try {
       const services = await storage.getAllServices();
