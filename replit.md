@@ -6,7 +6,54 @@ Stootap is a comprehensive business services platform designed to help students 
 
 ## Recent Changes (November 1, 2025)
 
-### Latest Updates - Admin Dashboard & Profile Enhancements
+### Latest Updates - Enhanced Admin Dashboard with Advanced Analytics
+
+**Admin Dashboard Major Improvements:**
+- **Leads Management Tab:** Added comprehensive leads management with real-time filtering
+  - Display all leads from database with search and filtering capabilities
+  - Filter by role (student/business/entrepreneur) and type (general/AI concierge/service inquiry)
+  - **Fixed filtering bug:** Now uses useEffect to properly handle filter state updates
+  - View detailed lead information in modal dialog with contact options
+  - Export leads to CSV functionality
+  - Mobile-responsive design with card layout for small screens and table for desktop
+  - Real-time data from `/api/admin/leads` endpoint with search and filter parameters
+
+- **Settings Tab Auto-Load:** Settings tab now automatically loads system health data when activated
+  - Auto-checks Razorpay, Supabase, and OpenRouter integration status on tab activation
+  - No manual refresh needed - data loads instantly when switching to Settings tab
+  - Real-time status indicators for all integrations
+
+- **Enhanced Analytics in Overview Tab:**
+  - Added time period selector (7 days / 30 days / 90 days)
+  - Improved export buttons with mobile-responsive text hiding
+  - Better visual hierarchy with calendar icon for time period selector
+  - More intuitive layout for analytics controls
+
+- **Backend API Enhancements:**
+  - Added `GET /api/admin/leads` with search, kind, and role filtering
+  - Added `GET /api/admin/leads/:id` for individual lead details
+  - Enhanced filtering capabilities for lead management
+
+- **Mobile Optimization:**
+  - Responsive tab layout (3 columns on mobile, 7 columns on desktop)
+  - Card-based mobile view for leads with touch-friendly buttons
+  - Table view for desktop with all lead information
+  - Uses `useIsMobile` hook for adaptive rendering
+  - Export buttons show icon only on mobile, full text on desktop
+
+- **UI/UX Improvements:**
+  - Color-coded badges for different user roles (student/business/entrepreneur)
+  - Message preview with line clamping
+  - Direct email and phone call actions from lead details
+  - Enhanced search with Enter key support
+  - Refresh functionality with loading states
+
+**Technical Fixes:**
+- Fixed lead filtering to use React useEffect for proper state synchronization
+- Removed redundant filter handler functions to prevent stale state issues
+- Auto-load system health on settings tab activation via useEffect hook
+
+### Previous Updates - Admin Dashboard & Profile Enhancements
 - **Simplified Admin Authentication:** Changed admin authentication from SHA-256 hashing to plain text password comparison (username: admin, password: @Stootap123) for easier access to private site
 - **Enhanced Profile Page:** 
   - Added tabbed interface with Personal Info, My Orders, and Security sections
