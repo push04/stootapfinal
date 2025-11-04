@@ -14,6 +14,8 @@ import type {
   InsertLead,
   CartItem,
   InsertCartItem,
+  Notification,
+  InsertNotification,
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
@@ -242,6 +244,51 @@ export class DatabaseStorage implements IStorage {
 
   async clearCart(sessionId: string): Promise<void> {
     await supabaseServer.from("cart_items").delete().eq("session_id", sessionId);
+  }
+
+  async getAllProfiles(): Promise<Profile[]> {
+    const { data } = await supabaseServer.from("profiles").select("*").order("created_at", { ascending: false });
+    return toCamelCase(data) || [];
+  }
+
+  async deleteProfile(id: string): Promise<boolean> {
+    const { error } = await supabaseServer.from("profiles").delete().eq("id", id);
+    return !error;
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const snakeCaseNotification = toSnakeCase(notification);
+    const { data, error } = await supabaseServer
+      .from("notifications")
+      .insert(snakeCaseNotification)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create notification: ${error.message}`);
+    return toCamelCase(data);
+  }
+
+  async getNotificationsByUserId(userId: string): Promise<Notification[]> {
+    const { data } = await supabaseServer
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    return toCamelCase(data) || [];
+  }
+
+  async markNotificationAsRead(id: string): Promise<Notification | undefined> {
+    const { data } = await supabaseServer
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", id)
+      .select()
+      .single();
+    return toCamelCase(data) || undefined;
+  }
+
+  async deleteNotification(id: string): Promise<boolean> {
+    const { error } = await supabaseServer.from("notifications").delete().eq("id", id);
+    return !error;
   }
 }
 

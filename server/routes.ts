@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage-db";
+import { storage, toCamelCase, toSnakeCase } from "./storage-db";
 import { ZodError, z } from "zod";
 import { requireAdmin, loginAdmin, logoutAdmin, isAdminAuthenticated } from "./auth";
 import Razorpay from "razorpay";
@@ -260,15 +260,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const order = await storage.getOrder(orderId);
         
-        if (order && order.customerEmail) {
-          await storage.createNotification({
-            userId: order.userId || "guest",
-            type: "payment_success",
-            title: "Payment Successful",
-            message: `Your payment of ₹${order.totalInr} was successful. Order ID: ${order.id}`,
-            actionUrl: `/orders/${order.id}`,
-          });
-        }
+        // Note: Notification system can be implemented later with dedicated notification table
+        // For now, payment success is tracked via order status
 
         res.json({ success: true, message: "Payment verified successfully" });
       } else {
@@ -374,6 +367,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(orders);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  // Update order status (customer-accessible for payment flow)
+  app.patch("/api/orders/:id/status", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      // Validate status
+      const validStatuses = ["pending", "payment_processing", "paid", "failed", "cancelled"];
+      if (!status || !validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      
+      // Get the order first to verify it exists and check session/user ownership
+      const order = await storage.getOrder(id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Only allow updating own orders (via session or user ID)
+      const sessionId = req.body.sessionId || req.query.sessionId;
+      if (req.user) {
+        // If authenticated, check user ID
+        if (order.userId !== req.user.id) {
+          return res.status(403).json({ error: "Not authorized to update this order" });
+        }
+      } else if (sessionId) {
+        // If not authenticated, check session ID
+        if (order.sessionId !== sessionId) {
+          return res.status(403).json({ error: "Not authorized to update this order" });
+        }
+      } else {
+        return res.status(401).json({ error: "Authentication or session ID required" });
+      }
+      
+      const updated = await storage.updateOrder(id, { status });
+      if (!updated) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Update order status error:", error);
+      res.status(500).json({ error: "Failed to update order status" });
     }
   });
 
@@ -1064,6 +1103,80 @@ Keep responses under 150 words. Be helpful and guide them toward taking action.`
     } catch (error) {
       console.error("Delete user error:", error);
       res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
+  // Notification/Message APIs
+  app.post("/api/admin/notifications", requireAdmin, async (req, res) => {
+    try {
+      const { userId, title, message, type, actionUrl } = req.body;
+      
+      if (!userId || !title || !message) {
+        return res.status(400).json({ error: "userId, title, and message are required" });
+      }
+      
+      const notification = await storage.createNotification({
+        userId,
+        type: type || "admin_message",
+        title,
+        message,
+        actionUrl: actionUrl || null,
+      });
+      
+      res.json(notification);
+    } catch (error) {
+      console.error("Create notification error:", error);
+      res.status(500).json({ error: "Failed to create notification" });
+    }
+  });
+
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const notifications = await storage.getNotificationsByUserId(req.user.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Get notifications error:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const notification = await storage.markNotificationAsRead(req.params.id);
+      if (!notification) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      
+      res.json(notification);
+    } catch (error) {
+      console.error("Mark notification as read error:", error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  app.delete("/api/notifications/:id", async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const deleted = await storage.deleteNotification(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete notification error:", error);
+      res.status(500).json({ error: "Failed to delete notification" });
     }
   });
 

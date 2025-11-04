@@ -13,6 +13,8 @@ import {
   type InsertLead,
   type CartItem,
   type InsertCartItem,
+  type Notification,
+  type InsertNotification,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -54,6 +56,14 @@ export interface IStorage {
   updateCartItemQty(id: string, qty: number): Promise<CartItem | undefined>;
   removeFromCart(id: string): Promise<boolean>;
   clearCart(sessionId: string): Promise<void>;
+  
+  getAllProfiles(): Promise<Profile[]>;
+  deleteProfile(id: string): Promise<boolean>;
+  
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotificationsByUserId(userId: string): Promise<Notification[]>;
+  markNotificationAsRead(id: string): Promise<Notification | undefined>;
+  deleteNotification(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -64,6 +74,7 @@ export class MemStorage implements IStorage {
   private orderItems: Map<string, OrderItem>;
   private leads: Map<string, Lead>;
   private cartItems: Map<string, CartItem>;
+  private notifications: Map<string, Notification>;
 
   constructor() {
     this.profiles = new Map();
@@ -73,6 +84,7 @@ export class MemStorage implements IStorage {
     this.orderItems = new Map();
     this.leads = new Map();
     this.cartItems = new Map();
+    this.notifications = new Map();
   }
 
   async getProfile(id: string): Promise<Profile | undefined> {
@@ -317,6 +329,66 @@ export class MemStorage implements IStorage {
   async clearCart(sessionId: string): Promise<void> {
     const items = await this.getCartItemsBySession(sessionId);
     items.forEach((item) => this.cartItems.delete(item.id));
+  }
+
+  async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
+    const category = this.categories.get(id);
+    if (!category) return undefined;
+    const updated = { ...category, ...updates };
+    this.categories.set(id, updated);
+    return updated;
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    return this.categories.delete(id);
+  }
+
+  async deleteService(id: string): Promise<boolean> {
+    return this.services.delete(id);
+  }
+
+  async getAllProfiles(): Promise<Profile[]> {
+    return Array.from(this.profiles.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
+  }
+
+  async deleteProfile(id: string): Promise<boolean> {
+    return this.profiles.delete(id);
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const id = randomUUID();
+    const notification: Notification = {
+      id,
+      userId: insertNotification.userId,
+      type: insertNotification.type,
+      title: insertNotification.title,
+      message: insertNotification.message,
+      actionUrl: insertNotification.actionUrl ?? null,
+      read: false,
+      createdAt: new Date(),
+    };
+    this.notifications.set(id, notification);
+    return notification;
+  }
+
+  async getNotificationsByUserId(userId: string): Promise<Notification[]> {
+    return Array.from(this.notifications.values())
+      .filter((n) => n.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async markNotificationAsRead(id: string): Promise<Notification | undefined> {
+    const notification = this.notifications.get(id);
+    if (!notification) return undefined;
+    notification.read = true;
+    this.notifications.set(id, notification);
+    return notification;
+  }
+
+  async deleteNotification(id: string): Promise<boolean> {
+    return this.notifications.delete(id);
   }
 }
 
