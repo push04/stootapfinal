@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { 
   GraduationCap, 
   Rocket, 
@@ -19,6 +23,7 @@ import {
   ArrowRight,
   Lightbulb,
   FileText,
+  Download,
   Shield,
   Briefcase,
   LineChart,
@@ -256,7 +261,263 @@ const learningResources = [
   },
 ];
 
+const careerTracks = [
+  {
+    title: "Get a Job",
+    description: "Curated fresher-friendly roles with clear salary ranges and real employer feedback.",
+    perks: ["Interview prep playbooks", "Salary benchmarking", "Campus-to-corporate mentors"],
+    fee: "Platform verification: ₹199 / 6 months",
+  },
+  {
+    title: "Get an Internship",
+    description: "Flexible, skill-aligned internships with stipend clarity and certificate support.",
+    perks: ["Work hour flexibility", "Project-based assessments", "Direct recruiter responses"],
+    fee: "No hidden charges; pay only after confirmation",
+  },
+  {
+    title: "Pitch Your Venture",
+    description: "Share your business idea and match with mentors, grants, and startup services.",
+    perks: ["Funding templates", "Mentor hours", "Launch checklists"],
+    fee: "Complimentary for students",
+  },
+];
+
+const featuredCompanies = [
+  {
+    name: "Innovate Solutions Co.",
+    focus: "Product & Growth",
+    perks: "₹4,999 annual listing after 2-month trial",
+    docs: "GSTIN, e-commerce certificate, or founder ID accepted",
+    roles: ["Growth Analyst", "Product Intern", "Customer Success Fellow"],
+  },
+  {
+    name: "FutureStack Labs",
+    focus: "Engineering",
+    perks: "Hands-on builds, flexible hours, paid sprints",
+    docs: "Startup registration or accelerator letter",
+    roles: ["Full-stack Trainee", "QA Explorer", "DevOps Apprentice"],
+  },
+  {
+    name: "Community Impact Hub",
+    focus: "Operations & Partnerships",
+    perks: "Field projects, stipend clarity, letters of experience",
+    docs: "NGO registration, MSME certificate, or MoU",
+    roles: ["Ops Fellow", "Partnerships Scout", "Program Assistant"],
+  },
+];
+
+const templateText = `The Vision & The Team
+Business Name: Innovate Solutions Co.
+[Craft a name that is memorable, relevant to your industry, and has an available domain.]
+Tagline: "___________________________________________________"
+Example: "Bridging the Gap Between Food Waste and Community Nourishment."
+Founder's Pledge:
+"My name is [Your Name], a final-year student at [Your College/University]. 
+Driven by a passion for [Your Industry/Field] and a desire to create tangible impact, I founded [Business
+ Name] to address a critical challenge I witnessed firsthand. You can reach me at [Your Email] or [Your
+ Phone Number] to discuss this vision further."
+The Driving Force: Our Team
+We are not just classmates; we are a multidisciplinary team united by a shared mission.
+O O
+[Team Member 1 Name], Role (e.g., Chief Technology Officer): Brings expertise in [Specific Skill, e.g.,
+ full-stack development, AI integration] from their projects in [Relevant Experience].
+[Team Member 2 Name], Role (e.g., Head of Marketing): A creative force with a proven track record in
+ [Specific Skill, e.g., digital marketing campaigns, brand storytelling].
+[Team Member 3 Name], Role (e.g., Operations Lead): Ensures seamless execution with their strong
+ background in [Specific Skill, e.g., project management, logistics].
+The Problem We Observed: A Market Gap
+Currently, [Your Target Audience] struggles with [Describe the core problem in a relatable way]. Existing
+ solutions are often [List 2-3 key pain points: e.g., too expensive, overly complex, inaccessible, or
+ inefficient]. This results in [The negative consequence for the customer and the market], creating a
+ significant gap for a smarter, more human-centric solution.
+Our Human-Centric Solution
+[Business Name] addresses this by providing [Describe your solution simply]. We don't just offer a
+ product/service; we offer an experience that is [List 3 key adjectives: e.g., intuitive, affordable, and
+ empowering]. Our solution directly alleviates the frustrations of [The Problem] by [Explain the
+ mechanism simply], making our customers' lives noticeably easier and better.
+Our Target Customers: Who We Serve
+We have a clear focus on serving [Specific Audience Description]. These are individuals/businesses who
+ are typically [Describe their demographics, behaviors, and psychographics]. For example, "Urban
+ millennials who value sustainability but lack time for eco-friendly shopping," or "Local small businesses
+ struggling with inefficient inventory management."
+The Opportunity: Market Size
+The total addressable market in our region is approximately [X] potential customers, representing a
+ market value of roughly ₹[Y] Crores. Our initial serviceable available market (SAM) is [Z] customers in
+ [Specific Geographic Area], with a potential revenue of ₹[A] Lakhs, demonstrating a substantial and
+ viable opportunity for a scalable startup.
+Learning from the Competition
+We respect our main competitors: 
+O O
+ [Competitor A], [Competitor B], and [Competitor C], and [Competitor
+ D],and [Competitor E]
+ Their Strengths: They have [e.g., established brand recognition, extensive
+ funding, a broad feature set].
+ Their Weaknesses: However, they often fall short in [e.g., personalized customer service, affordability
+ for our specific niche, user-friendly design]. This is where we see our opening.
+Our Competitive Edge: Why We Will Succeed
+ Our unique selling proposition is threefold:
+ Unmatched Personalization: We offer a level of customization and direct support that larger players
+ cannot.
+ Affordability & Accessibility: Our pricing model is designed to be inclusive without compromising on
+ quality.
+ Focus on [Your Nuke]: We are solely dedicated to solving [The Problem] for [Your Target Audience],
+ making us the specialists, not generalists.
+Bringing the Idea to Life
+ Our Core Offering
+ We are offering a [Product/Service Category] that provides [Core Value Proposition]. It is designed to be
+ [Describe its primary characteristic, e.g., a SaaS platform, a physical product with a service component, a
+ community-driven marketplace].
+ Key Features & Customer Benefits
+ Feature 1: [e.g., AI-Powered Dashboard] → Benefit: Saves our customers hours of manual work each week.
+ Feature 2: [e.g., Subscription Box with Customizable Options] → Benefit: Delivers convenience and a
+ personalized experience directly to their doorstep.
+ Feature 3: [e.g., Dedicated Customer Success Manager] → Benefit: Ensures they feel supported and
+ valued, not just like another ticket number.
+ The Technology Behind the Scenes
+ To operate efficiently, we will leverage:
+ Software/Tools: [e.g., Cloud Hosting (AWS/Google Cloud), CRM Software, Analytics Tools]. 
+(keep it simple) 
+O O
+ Hardware/Production: [e.g., Specific manufacturing equipment, logistics partner APIs].
+ Core Platform: [e.g., Our proprietary mobile app built on React Native].
+ Our Current Journey: The Stage We're At
+ We are currently in the [Idea/Prototype/Ready to Launch] stage.
+ If Idea: We have conducted extensive market research, built wireframes, and validated the concept with
+ over [Number] potential customers.
+ If Prototype: We have a working prototype/MVP and are running a private beta with a select group of
+ users to gather feedback.
+ If Ready to Launch: All systems are developed, tested, and we are prepared for a public launch within
+ [Timeline] of securing funding.
+Sustainable Financial Model
+ How We Create Value & Revenue
+ Our revenue model is designed for sustainability and growth through:
+ Primary Stream: [e.g., Subscription Fees (SaaS), Transaction Commissions, Direct Product Sales].
+ Secondary Streams: [e.g., Premium Support Tiers, Affiliate Partnerships, White-labeling Services].
+ Our Pricing Philosophy
+ We believe in transparent and fair pricing.
+ O O
+ Strategy: We employ a [e.g., Freemium / Tiered Pricing / Value-Based Pricing] model.
+ Structure: Our entry-level plan starts at ₹[X]/month for core features, with our premium
+ plan at ₹[Y]/month offering advanced capabilities, positioning us competitively while
+ ensuring healthy margins.
+ Fueling Our Initial Growth: Funding Request
+ To accelerate our development and market entry, we are seeking an initial investment of
+ ₹x amount.
+ Team & Contingency (10% - ₹50,000): To support core team efforts and provide a buffer for unforeseen expenses.
+Our Growth Journey
+ First 3 Months (With Stootap's Guidance):
+ Refine our idea with expert mentorship.
+ Launch a basic version and get our first 50 users.
+ Build our first operational workflows.
+ Next 6 Months (Making an Impact):
+ Grow to 500 happy users.
+ Achieve consistent monthly revenue.
+ Implement key feedback from our early users.
+ One Year from Now:
+ Become the go-to solution for [Your Niche] in our city.
+ Explore expanding to a new feature or location.
+ The Bigger Picture:
+ O O
+ We're here to make a lasting, positive impact by [Your Value Proposition, e.g., making life easier, supporting
+ local communities, or promoting sustainability].
+ Why Partner With Us?
+ We are a passionate, dedicated team with the energy and drive to see this through. We have the initial idea
+ and the will to execute, and we know that with the right guidance, we can build something amazing.
+ Our Offer:
+ In exchange for the investment of ₹x and, most importantly, the expert guidance from Stootap, we are offering [X]%
+ equity in [Business Name].
+Our Commitment & Stootap's Support
+ We are fully committed to this venture and are confident in the opportunity we've identified. We are
+ thrilled by the prospect of working with Stootap, because Stootap is here for our help.
+ We understand that Stootap has everything a young business like ours could need. From this point
+ forward, we look to Stootap to guide us, and we will focus on executing the plan you help us chart.
+ Our List of Required Needs for Stootap:
+ Please help us with the following to build a strong foundation for our business:
+ Structured Business Plan Finalization: A clear, step-by-step roadmap for the next 12 months.
+ Legal & Registration Framework: Guidance on the best business structure (LLP, Pvt. Ltd., etc.) and help
+ with the registration process.
+ Financial Model & Accounting Setup: A simple, robust financial model for tracking and a recommended
+ accounting system.
+ Mentorship & Expert Access: Connections to mentors in [Your Industry, e.g., SaaS, E-commerce] for
+ specialized advice.
+ O O
+ Technology & Tool Stack: Recommendations for the best and most affordable software, platforms, and
+ tools for our specific needs.
+ Marketing & Launch Playbook: A tailored strategy for our initial customer acquisition and brand launch.
+ Pitch Deck Refinement: Professional help in crafting our story for future investors.
+ Networking Introductions: Introductions to potential partners, vendors, or pilot customers.
+ For [Business Name]:
+ [Your Name]
+ Founder
+ Date: [Date]
+ For Stootap:
+ [Representative Name]
+ [Title], Stootap
+ Date: [Date]
+ Company Stamp/Seal:
+ [Space for Stamp/Seal]
+`;
+
 export default function Students() {
+  const { toast } = useToast();
+  const [selectedCompany, setSelectedCompany] = useState(featuredCompanies[0]);
+  const [careerForm, setCareerForm] = useState({
+    name: "",
+    email: "",
+    college: "",
+    goal: "Get a job",
+    preferredRole: "",
+    availability: "Hybrid",
+    experience: "Fresher",
+  });
+  const [applicationForm, setApplicationForm] = useState({
+    company: featuredCompanies[0].name,
+    role: featuredCompanies[0].roles[0],
+    experience: "Fresher",
+    flexibility: "Remote",
+    hoursPerWeek: 20,
+    days: "Mon-Fri",
+    college: "",
+    account: "",
+    cvLink: "",
+  });
+
+  const templateBlobUrl = useMemo(() => {
+    const blob = new Blob([templateText], { type: "application/pdf" });
+    return URL.createObjectURL(blob);
+  }, []);
+
+  const handleCareerSubmit = () => {
+    toast({
+      title: "Submitted to Admin Dashboard",
+      description: "Your interest has been logged for the admin team to match you with a role.",
+    });
+  };
+
+  const handleCompanyChange = (companyName: string) => {
+    const company = featuredCompanies.find((c) => c.name === companyName) ?? featuredCompanies[0];
+    setSelectedCompany(company);
+    setApplicationForm((prev) => ({
+      ...prev,
+      company: company.name,
+      role: company.roles[0],
+    }));
+  };
+
+  const handleApplicationSubmit = () => {
+    toast({
+      title: "Application captured",
+      description: "Details are ready for review in the admin dashboard with your CV preferences.",
+    });
+  };
+
+  const handleTemplateDownload = () => {
+    const link = document.createElement("a");
+    link.href = templateBlobUrl;
+    link.download = "Stootap_Student_Vision_Template.pdf";
+    link.click();
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navigation />
@@ -274,18 +535,18 @@ export default function Students() {
               <motion.div variants={fadeIn}>
                 <Badge className="mb-6 text-sm py-2 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
                   <GraduationCap className="mr-2 h-4 w-4" />
-                  Student Entrepreneur Program
+                  Student Career & Startup Desk
                 </Badge>
               </motion.div>
               <motion.h1 
                 variants={fadeIn}
                 className="text-5xl lg:text-7xl font-bold font-heading mb-6"
               >
-                <span className="text-gray-900 dark:text-gray-100">Turn Your Ideas Into</span>
-                <span className="block mt-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">Successful Startups</span>
+                <span className="text-gray-900 dark:text-gray-100">Launch Your Career or</span>
+                <span className="block mt-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">Build Your Own Startup</span>
               </motion.h1>
               <motion.p variants={fadeIn} className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-                Access ₹50Cr+ in funding opportunities, expert guidance, and fast-track legal support designed specifically for student entrepreneurs
+                Get internships, jobs, or a funded startup playbook with one hub that routes every response to the Stootap admin dashboard for faster follow-ups.
               </motion.p>
               <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link href="/services">
@@ -323,6 +584,121 @@ export default function Students() {
                   <div className="text-sm text-white/80">{stat.label}</div>
                 </motion.div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Career Launchpad */}
+        <section className="py-16 lg:py-24">
+          <div className="mx-auto max-w-7xl px-4 lg:px-8">
+            <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 items-start">
+              <div>
+                <div className="text-center lg:text-left max-w-3xl mb-10">
+                  <Badge className="mb-4">Career Hub</Badge>
+                  <h2 className="text-4xl font-bold font-heading mb-4">Jobs, Internships, and Startup Tracks</h2>
+                  <p className="text-lg text-muted-foreground">
+                    Tell us your goal and we will queue your request inside the admin dashboard so mentors can respond quickly.
+                    Paid opportunities carry a ₹199 / 6 months platform fee to keep spam away.
+                  </p>
+                </div>
+                <div className="grid md:grid-cols-3 gap-6">
+                  {careerTracks.map((track) => (
+                    <Card key={track.title} className="hover-elevate h-full">
+                      <CardHeader>
+                        <CardTitle>{track.title}</CardTitle>
+                        <CardDescription>{track.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <ul className="space-y-2">
+                          {track.perks.map((perk) => (
+                            <li key={perk} className="flex items-start gap-2 text-sm">
+                              <CheckCircle2 className="h-4 w-4 text-accent mt-0.5" />
+                              <span>{perk}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <Badge variant="secondary">{track.fee}</Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle>Share Your Interest</CardTitle>
+                  <CardDescription>We collect the details in the admin dashboard for a guided response.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Name</label>
+                      <Input
+                        value={careerForm.name}
+                        onChange={(e) => setCareerForm({ ...careerForm, name: e.target.value })}
+                        placeholder="Your full name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">College</label>
+                      <Input
+                        value={careerForm.college}
+                        onChange={(e) => setCareerForm({ ...careerForm, college: e.target.value })}
+                        placeholder="E.g., NIT Trichy"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Email</label>
+                      <Input
+                        value={careerForm.email}
+                        onChange={(e) => setCareerForm({ ...careerForm, email: e.target.value })}
+                        type="email"
+                        placeholder="you@college.edu"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Goal</label>
+                      <Input
+                        value={careerForm.goal}
+                        onChange={(e) => setCareerForm({ ...careerForm, goal: e.target.value })}
+                        placeholder="Get a job / internship / launch startup"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Preferred Role</label>
+                      <Input
+                        value={careerForm.preferredRole}
+                        onChange={(e) => setCareerForm({ ...careerForm, preferredRole: e.target.value })}
+                        placeholder="Product intern, Growth associate, etc."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Availability</label>
+                      <Input
+                        value={careerForm.availability}
+                        onChange={(e) => setCareerForm({ ...careerForm, availability: e.target.value })}
+                        placeholder="Remote / Hybrid / Onsite"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Experience Snapshot</label>
+                    <Textarea
+                      value={careerForm.experience}
+                      onChange={(e) => setCareerForm({ ...careerForm, experience: e.target.value })}
+                      placeholder="Fresher, 6-month intern, hackathon wins, etc."
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  <Button className="w-full" onClick={handleCareerSubmit}>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Submit to Admin Desk
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    We use this to nudge mentors, recruiters, and the admin dashboard for faster callbacks.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
@@ -458,6 +834,157 @@ export default function Students() {
                   </Card>
                 </motion.div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Companies & Applications */}
+        <section className="py-16 lg:py-24 bg-muted/30">
+          <div className="mx-auto max-w-7xl px-4 lg:px-8">
+            <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 items-start">
+              <div>
+                <div className="text-center lg:text-left max-w-3xl mb-10">
+                  <Badge className="mb-4 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Paid Roles</Badge>
+                  <h2 className="text-4xl font-bold font-heading mb-4">Apply to Featured Companies</h2>
+                  <p className="text-lg text-muted-foreground">
+                    Choose a company, pick a position, and share your CV preferences. Applications (including ₹199 / 6 month platform
+                    fee for paid roles) are routed to the admin dashboard so recruiters can respond quickly.
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  {featuredCompanies.map((company) => (
+                    <Card
+                      key={company.name}
+                      className={`h-full cursor-pointer transition-all ${selectedCompany.name === company.name ? "ring-2 ring-accent" : "hover-elevate"}`}
+                      onClick={() => handleCompanyChange(company.name)}
+                    >
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle>{company.name}</CardTitle>
+                            <CardDescription>{company.focus}</CardDescription>
+                          </div>
+                          <Badge variant="secondary">₹4,999/yr</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3 text-sm">
+                        <p className="text-muted-foreground">Listing starts free for 2 months, then ₹4,999 per year.</p>
+                        <div className="flex items-start gap-2">
+                          <FileText className="h-4 w-4 text-accent mt-0.5" />
+                          <span>{company.docs}</span>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-semibold">Open roles</p>
+                          <div className="flex flex-wrap gap-2">
+                            {company.roles.map((role) => (
+                              <Badge key={role} variant="outline">{role}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Companies get a login after verification so they can manage applicants directly.</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle>Apply to a Featured Company</CardTitle>
+                  <CardDescription>Share your flexibility, hours, and college details for stipend routing.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Company</label>
+                      <Input
+                        value={applicationForm.company}
+                        onChange={(e) => handleCompanyChange(e.target.value)}
+                        list="company-options"
+                      />
+                      <datalist id="company-options">
+                        {featuredCompanies.map((company) => (
+                          <option key={company.name} value={company.name} />
+                        ))}
+                      </datalist>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Role</label>
+                      <Input
+                        value={applicationForm.role}
+                        onChange={(e) => setApplicationForm({ ...applicationForm, role: e.target.value })}
+                        placeholder="Choose from featured positions"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Experience</label>
+                      <Input
+                        value={applicationForm.experience}
+                        onChange={(e) => setApplicationForm({ ...applicationForm, experience: e.target.value })}
+                        placeholder="Fresher / 6 months / 1+ year"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Work Mode</label>
+                      <Input
+                        value={applicationForm.flexibility}
+                        onChange={(e) => setApplicationForm({ ...applicationForm, flexibility: e.target.value })}
+                        placeholder="Remote / Hybrid / Onsite"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Hours per Week</label>
+                      <Input
+                        type="number"
+                        min={5}
+                        value={applicationForm.hoursPerWeek}
+                        onChange={(e) => setApplicationForm({ ...applicationForm, hoursPerWeek: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Working Days</label>
+                      <Input
+                        value={applicationForm.days}
+                        onChange={(e) => setApplicationForm({ ...applicationForm, days: e.target.value })}
+                        placeholder="Mon-Fri / Weekends"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">College</label>
+                      <Input
+                        value={applicationForm.college}
+                        onChange={(e) => setApplicationForm({ ...applicationForm, college: e.target.value })}
+                        placeholder="College for verification"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Account Details for Salary</label>
+                      <Input
+                        value={applicationForm.account}
+                        onChange={(e) => setApplicationForm({ ...applicationForm, account: e.target.value })}
+                        placeholder="UPI or bank (encrypted for admin)"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">CV / Portfolio Link</label>
+                    <Textarea
+                      value={applicationForm.cvLink}
+                      onChange={(e) => setApplicationForm({ ...applicationForm, cvLink: e.target.value })}
+                      placeholder="Drive/Notion/Portfolio URL"
+                      className="min-h-[90px]"
+                    />
+                  </div>
+                  <Button className="w-full" onClick={handleApplicationSubmit}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Submit & Pay Platform Fee Later
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Admins can upload, edit, or delete your supporting documents from the dashboard once you share them.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
@@ -645,6 +1172,77 @@ export default function Students() {
                 </TabsContent>
               ))}
             </Tabs>
+          </div>
+        </section>
+
+        {/* Founder Toolkit & Company Listing */}
+        <section className="py-16 lg:py-24 bg-muted/30">
+          <div className="mx-auto max-w-7xl px-4 lg:px-8">
+            <div className="grid md:grid-cols-2 gap-6 items-stretch">
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle>Download Your Venture Vision Template (PDF)</CardTitle>
+                  <CardDescription>
+                    A fill-in-the-blank guide covering vision, market gap, tech stack, finances, and partnership asks tailored for students.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <Sparkles className="h-4 w-4 text-accent mt-0.5" />
+                      <span>Complete "The Vision & The Team" statement with pledge and team bios.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Target className="h-4 w-4 text-accent mt-0.5" />
+                      <span>Market gap, solution, competition, and USP prompts ready for investor decks.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FileText className="h-4 w-4 text-accent mt-0.5" />
+                      <span>Financial model, funding ask, and growth roadmap tailored to student founders.</span>
+                    </li>
+                  </ul>
+                  <Button className="w-full" onClick={handleTemplateDownload}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF Template
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">Use it for applications, investor outreach, or admin reviews.</p>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle>List Your Company on Stootap</CardTitle>
+                  <CardDescription>
+                    Company login + dashboard after verification. Optional documents (GSTIN, e-commerce proof, MSME/NGO letters) accepted.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p className="font-semibold text-foreground">How it works</p>
+                    <p>2-month free listing → ₹4,999/year. Add roles, upload/delete files, and manage applicants in the admin dashboard.</p>
+                    <p>Set paid opportunities with a ₹199 / 6 month platform fee for talent; collect CVs, availability, and salary accounts securely.</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Badge variant="secondary" className="justify-center">Company login enabled after review</Badge>
+                    <Badge variant="outline" className="justify-center">Document uploads optional</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Registration Type</label>
+                    <Input placeholder="LLP / Pvt Ltd / MSME / NGO" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Documents (if any)</label>
+                    <Input placeholder="GSTIN, incorporation cert, or leave blank" />
+                  </div>
+                  <Link href="/contact">
+                    <Button className="w-full" variant="outline">
+                      <Users className="mr-2 h-4 w-4" />
+                      Request Company Login
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </section>
 

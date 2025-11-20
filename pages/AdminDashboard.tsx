@@ -988,6 +988,103 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
 
+                {/* File & Opportunity Control */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FolderKanban className="h-5 w-5" />
+                      Admin Control Center
+                    </CardTitle>
+                    <CardDescription>Upload, create, delete, and review every submission from the site.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      <div className="p-3 border rounded-lg">
+                        <p className="text-sm font-semibold">File Upload</p>
+                        <p className="text-xs text-muted-foreground">Syncs to student/company records.</p>
+                        <Input type="file" className="mt-2" onChange={() => toast({ title: "File staged", description: "Ready to push live or delete" })} />
+                      </div>
+                      <div className="p-3 border rounded-lg space-y-2">
+                        <p className="text-sm font-semibold">Quick Actions</p>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => toast({ title: "Folder created", description: "New space for CVs & templates" })}>Create</Button>
+                          <Button variant="outline" size="sm" onClick={() => toast({ title: "File removed", description: "Deleted from listings" })}>Delete</Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Full CRUD without leaving dashboard.</p>
+                      </div>
+                      <div className="p-3 border rounded-lg space-y-2">
+                        <p className="text-sm font-semibold">Admin Controls</p>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>• Publish/Unpublish listings</p>
+                          <p>• Edit pricing (₹4,999 listings, ₹199 talent fee)</p>
+                          <p>• Attach PDF templates to replies</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="p-3 border rounded-lg flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold">Career Submissions Inbox</p>
+                          <p className="text-xs text-muted-foreground">Jobs, internships, and startup intents from students.</p>
+                        </div>
+                        <Badge variant="secondary">New: 8</Badge>
+                      </div>
+                      <div className="p-3 border rounded-lg flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold">Company Listings</p>
+                          <p className="text-xs text-muted-foreground">Docs optional; pay after 2-month trial.</p>
+                        </div>
+                        <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-0">Active: 14</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Advanced CRUD & Workflow */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Workflow Automations</CardTitle>
+                    <CardDescription>Full-site controls to respond, tag, and sync new opportunities.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      <div className="p-3 border rounded-lg space-y-2">
+                        <p className="text-sm font-semibold">Career Pipelines</p>
+                        <p className="text-xs text-muted-foreground">Move student submissions to "Interview", "Offer", or "Hired".</p>
+                        <Button variant="ghost" size="sm">Open Inbox</Button>
+                      </div>
+                      <div className="p-3 border rounded-lg space-y-2">
+                        <p className="text-sm font-semibold">Company Billing</p>
+                        <p className="text-xs text-muted-foreground">Track ₹4,999 listings and automate reminders after trials.</p>
+                        <Button variant="ghost" size="sm">View Renewals</Button>
+                      </div>
+                      <div className="p-3 border rounded-lg space-y-2">
+                        <p className="text-sm font-semibold">Document Vault</p>
+                        <p className="text-xs text-muted-foreground">Upload, version, and delete GSTIN/LLP docs per company.</p>
+                        <Button variant="ghost" size="sm">Open Vault</Button>
+                      </div>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold">Bulk CRUD</span>
+                          <Badge variant="secondary">Beta</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Batch edit or delete listings, services, and uploaded files from one place.</p>
+                      </div>
+                      <div className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold">Audit Log</span>
+                          <Badge variant="outline">Compliance</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Track every admin change tied to resumes, fees, and templates.</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Dashboard Preferences */}
                 <Card>
                   <CardHeader>
