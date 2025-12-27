@@ -15,9 +15,9 @@ const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '
 const encodedPassword = encodeURIComponent(supabasePassword);
 
 // Use POOLER connection for serverless (Netlify Functions)
-// Tokyo region: ap-northeast-1
+// Tokyo region: aws-1-ap-northeast-1
 const connectionString = process.env.DATABASE_URL ||
-  `postgresql://postgres.${projectRef}:${encodedPassword}@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require`;
+  `postgresql://postgres.${projectRef}:${encodedPassword}@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres`;
 
 // Initialize postgres client with serverless-friendly settings
 const client = postgres(connectionString, {
