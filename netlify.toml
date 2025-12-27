@@ -1,6 +1,6 @@
 [build]
   # Build command runs both client and functions build
-  command = "npm install --legacy-peer-deps && npm run build"
+  command = "npm install --legacy-peer-deps --include=dev && npm run build"
   # Publish directory contains the built Vite frontend
   publish = "dist/public"
   # Functions directory contains the built serverless functions
