@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,8 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Briefcase, Rocket, FileText, CheckCircle, Clock, XCircle, Search } from "lucide-react";
 import { motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 export default function StudentDashboard() {
+    const [activeTab, setActiveTab] = useState("overview");
+    const { toast } = useToast();
+
     const { data: applications, isLoading: loadingApps } = useQuery({
         queryKey: ["/api/opportunities/my-applications"],
     });
@@ -16,6 +21,12 @@ export default function StudentDashboard() {
     const { data: savedJobs } = useQuery({
         queryKey: ["/api/opportunities/saved-jobs"],
     });
+
+    const handleDownloadPDF = () => {
+        // Open startup idea template PDF
+        window.open('/startup-idea-template.pdf', '_blank');
+        toast({ title: "Download Started", description: "If download doesn't start, check your popup blocker." });
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
@@ -32,7 +43,7 @@ export default function StudentDashboard() {
             </div>
 
             <div className="max-w-7xl mx-auto px-6 -mt-10 relative z-20">
-                <Tabs defaultValue="overview" className="space-y-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                     <TabsList className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-1 rounded-xl shadow-lg border border-indigo-100 dark:border-indigo-900/50 w-full md:w-auto inline-flex h-auto">
                         <TabsTrigger value="overview" className="py-3 px-6 rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all text-base"><Briefcase className="w-5 h-5 mr-2" /> Overview</TabsTrigger>
                         <TabsTrigger value="applications" className="py-3 px-6 rounded-lg data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all text-base"><FileText className="w-5 h-5 mr-2" /> Applications</TabsTrigger>
@@ -70,7 +81,7 @@ export default function StudentDashboard() {
                                     </CardHeader>
                                     <CardContent className="relative">
                                         <p className="text-slate-500 dark:text-slate-400 mb-6">Have a brilliant idea? Submit your concept and get support.</p>
-                                        <Button onClick={() => document.querySelector('[value="startup"]')?.dispatchEvent(new Event('click', { bubbles: true }))} className="w-full bg-purple-600 hover:bg-purple-700 shadow-purple-200 shadow-lg">Submit Idea</Button>
+                                        <Button onClick={() => setActiveTab("startup")} className="w-full bg-purple-600 hover:bg-purple-700 shadow-purple-200 shadow-lg">Submit Idea</Button>
                                     </CardContent>
                                 </Card>
                             </motion.div>
@@ -147,8 +158,8 @@ export default function StudentDashboard() {
                                                 </div>
                                                 <div className="flex items-center space-x-4">
                                                     <Badge className={`px-3 py-1 rounded-full ${app.status === 'shortlisted' ? 'bg-emerald-100 text-emerald-700' :
-                                                            app.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                                'bg-blue-100 text-blue-700'
+                                                        app.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                            'bg-blue-100 text-blue-700'
                                                         }`}>
                                                         {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                                                     </Badge>
@@ -179,7 +190,7 @@ export default function StudentDashboard() {
                                         <div>
                                             <h4 className="font-semibold text-lg">Download Template</h4>
                                             <p className="text-sm text-purple-100 mt-1">Get the official Stootap Idea Submission PDF.</p>
-                                            <Button variant="secondary" className="mt-3 bg-white text-purple-700 hover:bg-purple-50">Download PDF</Button>
+                                            <Button variant="secondary" onClick={handleDownloadPDF} className="mt-3 bg-white text-purple-700 hover:bg-purple-50">Download PDF</Button>
                                         </div>
                                     </div>
                                     <div className="flex items-start space-x-4 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
