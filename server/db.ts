@@ -8,15 +8,22 @@ if (!supabaseUrl || !supabasePassword) {
   throw new Error("SUPABASE_URL and SUPABASE_DB_PASSWORD must be provided");
 }
 
-// Extract project ref from URL for constructing direct connection string
+// Extract project ref from URL for constructing connection string
 const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '');
 
-// Construct connection string properly
-// Use direct connection for reliability
-const connectionString = process.env.DATABASE_URL || `postgresql://postgres:${supabasePassword}@db.${projectRef}.supabase.co:5432/postgres`;
+// Use POOLER connection for serverless (Netlify Functions)
+// Pooler uses port 6543 instead of 5432 and different hostname
+const connectionString = process.env.DATABASE_URL ||
+  `postgresql://postgres.${projectRef}:${supabasePassword}@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require`;
 
-// Initialize postgres client
-const client = postgres(connectionString, { prepare: false });
+// Initialize postgres client with serverless-friendly settings
+const client = postgres(connectionString, {
+  prepare: false,
+  ssl: 'require',
+  max: 1, // Limit connections for serverless
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
 
 // Initialize Drizzle
 export const db = drizzle(client);
