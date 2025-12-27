@@ -23,9 +23,11 @@ export default function StudentDashboard() {
     });
 
     const handleDownloadPDF = () => {
-        // Open startup idea template PDF
-        window.open('/startup-idea-template.pdf', '_blank');
-        toast({ title: "Download Started", description: "If download doesn't start, check your popup blocker." });
+        // PDF template coming soon - for now show message
+        toast({
+            title: "Coming Soon",
+            description: "The Stootap Idea Submission PDF template will be available soon. For now, please contact us directly."
+        });
     };
 
     return (
