@@ -1,6 +1,6 @@
 [build]
   # Build command runs both client and functions build
-  command = "npm run build"
+  command = "npm ci && npm run build"
   # Publish directory contains the built Vite frontend
   publish = "dist/public"
   # Functions directory contains the built serverless functions
