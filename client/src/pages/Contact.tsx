@@ -125,8 +125,8 @@ export default function Contact() {
                 <p className="text-muted-foreground mb-2">
                   Send us an email anytime
                 </p>
-                <a href="mailto:support@stootap.com" className="text-primary hover:underline">
-                  support@stootap.com
+                <a href="mailto:info@stootap.com" className="text-primary hover:underline">
+                  info@stootap.com
                 </a>
               </Card>
 
@@ -138,8 +138,8 @@ export default function Contact() {
                 <p className="text-muted-foreground mb-2">
                   Mon-Fri from 9am to 6pm IST
                 </p>
-                <a href="tel:+918888888888" className="text-primary hover:underline">
-                  +91 88888 88888
+                <a href="tel:+918949480566" className="text-primary hover:underline">
+                  +91 8949480566
                 </a>
               </Card>
 
