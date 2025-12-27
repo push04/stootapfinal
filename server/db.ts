@@ -11,10 +11,13 @@ if (!supabaseUrl || !supabasePassword) {
 // Extract project ref from URL for constructing connection string
 const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '');
 
+// URL-encode password to handle special characters like @
+const encodedPassword = encodeURIComponent(supabasePassword);
+
 // Use POOLER connection for serverless (Netlify Functions)
 // Pooler uses port 6543 instead of 5432 and different hostname
 const connectionString = process.env.DATABASE_URL ||
-  `postgresql://postgres.${projectRef}:${supabasePassword}@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require`;
+  `postgresql://postgres.${projectRef}:${encodedPassword}@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require`;
 
 // Initialize postgres client with serverless-friendly settings
 const client = postgres(connectionString, {
