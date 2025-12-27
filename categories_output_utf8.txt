@@ -1,0 +1,211 @@
+﻿Categories found: 26
+[
+  {
+    "id": "cat_compliance",
+    "slug": "compliance",
+    "name": "Compliance Services",
+    "description": "Legal registrations and compliance management",
+    "sort_order": 1,
+    "created_at": "2025-10-31T16:40:44.541809"
+  },
+  {
+    "id": "cat_tax",
+    "slug": "tax-accounting",
+    "name": "Tax & Accounting",
+    "description": "Tax filing, accounting, and financial services",
+    "sort_order": 2,
+    "created_at": "2025-10-31T16:40:44.541809"
+  },
+  {
+    "id": "cat_legal",
+    "slug": "legal",
+    "name": "Legal Services",
+    "description": "Contracts, agreements, and legal documentation",
+    "sort_order": 3,
+    "created_at": "2025-10-31T16:40:44.541809"
+  },
+  {
+    "id": "cat_marketing",
+    "slug": "marketing",
+    "name": "Marketing & Branding",
+    "description": "Digital marketing and brand building",
+    "sort_order": 4,
+    "created_at": "2025-10-31T16:40:44.541809"
+  },
+  {
+    "id": "cat_funding",
+    "slug": "funding",
+    "name": "Funding & Investment",
+    "description": "Startup funding and investment opportunities",
+    "sort_order": 5,
+    "created_at": "2025-10-31T16:40:44.541809"
+  },
+  {
+    "id": "cat_hr",
+    "slug": "hr-payroll",
+    "name": "HR & Payroll",
+    "description": "Human resources and payroll management",
+    "sort_order": 6,
+    "created_at": "2025-10-31T16:40:44.541809"
+  },
+  {
+    "id": "e55e02ea-5dd7-448c-817b-169ea657deb7",
+    "slug": "test",
+    "name": "TEST",
+    "description": "TEST1",
+    "sort_order": 0,
+    "created_at": "2025-11-01T09:05:50.627876"
+  },
+  {
+    "id": "0fc6c48f-48b3-49b3-991a-adb12b8dd4f0",
+    "slug": "yffyk",
+    "name": "YFFYK",
+    "description": "MBV MH",
+    "sort_order": 0,
+    "created_at": "2025-11-01T14:34:56.267051"
+  },
+  {
+    "id": "f7948e1d-a62f-4c0e-b994-2fe179eb1682",
+    "slug": "dsvf",
+    "name": "dsvf",
+    "description": "",
+    "sort_order": 0,
+    "created_at": "2025-11-02T13:10:40.755196"
+  },
+  {
+    "id": "9549b976-6c64-467b-bddf-3c78045ab213",
+    "slug": "test3",
+    "name": "TEST3",
+    "description": "NNN",
+    "sort_order": 0,
+    "created_at": "2025-11-04T07:14:14.106136"
+  },
+  {
+    "id": "2565f713-eb27-4085-8744-70fdc5c84ce6",
+    "slug": "gst-tax-compliance",
+    "name": "GST & Tax Compliance",
+    "description": "GST registration, returns, tax planning, and compliance services",
+    "sort_order": 2,
+    "created_at": "2025-11-04T09:01:07.642084"
+  },
+  {
+    "id": "deea1c0b-75c5-4093-b7e1-23ea89f956f7",
+    "slug": "accounting-bookkeeping",
+    "name": "Accounting & Bookkeeping",
+    "description": "Financial accounting, bookkeeping, payroll, and CFO services",
+    "sort_order": 3,
+    "created_at": "2025-11-04T09:01:07.811248"
+  },
+  {
+    "id": "a896abfb-a154-4844-a767-786b4748b633",
+    "slug": "business-loans",
+    "name": "Business Loans & Funding",
+    "description": "Working capital, term loans, startup funding, and financial assistance",
+    "sort_order": 12,
+    "created_at": "2025-11-04T09:01:07.986705"
+  },
+  {
+    "id": "1d54ac2e-edc7-4eb1-8d80-3c6da51ec26d",
+    "slug": "import-export",
+    "name": "Import-Export Licensing",
+    "description": "IEC, DGFT licenses, customs clearance, and export documentation",
+    "sort_order": 6,
+    "created_at": "2025-11-04T09:01:08.102943"
+  },
+  {
+    "id": "889359be-93f6-4ec1-96e0-1739691d89d0",
+    "slug": "food-fssai",
+    "name": "Food Business & FSSAI",
+    "description": "FSSAI registration, food licenses, and compliance for food businesses",
+    "sort_order": 7,
+    "created_at": "2025-11-04T09:01:08.13404"
+  },
+  {
+    "id": "bb7ca91a-fb86-4eee-a10c-67829d4dc0df",
+    "slug": "hr-recruitment",
+    "name": "HR & Recruitment",
+    "description": "Hiring, HR compliance, payroll, and employee management",
+    "sort_order": 11,
+    "created_at": "2025-11-04T09:01:08.204796"
+  },
+  {
+    "id": "4c16c9c8-dca5-4412-8630-62a75e7e71a4",
+    "slug": "digital-marketing",
+    "name": "Digital Marketing",
+    "description": "SEO, social media, content marketing, and online advertising",
+    "sort_order": 9,
+    "created_at": "2025-11-04T09:01:08.143193"
+  },
+  {
+    "id": "881f2acd-16e2-4520-ab76-92c20a013583",
+    "slug": "legal-documentation",
+    "name": "Legal Documentation",
+    "description": "Contracts, agreements, legal notices, and documentation services",
+    "sort_order": 5,
+    "created_at": "2025-11-04T09:01:08.264754"
+  },
+  {
+    "id": "1604f74c-a488-44b4-9f0f-0d7372eb9d9f",
+    "slug": "web-app-development",
+    "name": "Website & App Development",
+    "description": "Website design, app development, and digital solutions",
+    "sort_order": 10,
+    "created_at": "2025-11-04T09:01:08.246738"
+  },
+  {
+    "id": "8a2ebc0d-7359-490e-a52c-04c4fb018d12",
+    "slug": "msme-startup",
+    "name": "MSME & Startup Schemes",
+    "description": "Udyam registration, startup India, government schemes, and subsidies",
+    "sort_order": 15,
+    "created_at": "2025-11-04T09:01:08.246581"
+  },
+  {
+    "id": "792c0d1e-3d0f-4d5d-b11a-82941cafabb8",
+    "slug": "iso-certification",
+    "name": "ISO & Certifications",
+    "description": "ISO certifications, quality management, and industry certifications",
+    "sort_order": 8,
+    "created_at": "2025-11-04T09:01:08.347676"
+  },
+  {
+    "id": "8f692717-2baf-4f7c-9a6a-6ebdb0a4609b",
+    "slug": "trademark-ip",
+    "name": "Trademark & Intellectual Property",
+    "description": "Trademark registration, copyright, patent, and IP protection",
+    "sort_order": 4,
+    "created_at": "2025-11-04T09:01:08.308228"
+  },
+  {
+    "id": "f3e08913-8351-4a35-9654-46529ad03fa5",
+    "slug": "real-estate-property",
+    "name": "Real Estate & Property",
+    "description": "Property registration, NOC, conversion, and real estate services",
+    "sort_order": 14,
+    "created_at": "2025-11-04T09:01:08.390263"
+  },
+  {
+    "id": "9705133b-fe4e-4c42-8137-465ae2573451",
+    "slug": "insurance",
+    "name": "Business Insurance",
+    "description": "Commercial insurance, liability coverage, and risk management",
+    "sort_order": 13,
+    "created_at": "2025-11-04T09:01:08.366995"
+  },
+  {
+    "id": "c67959ae-47f7-4dc9-8b25-50b8649521f1",
+    "slug": "business-registration",
+    "name": "Business Registration & Licensing",
+    "description": "Company incorporation, registration, and legal entity setup services",
+    "sort_order": 1,
+    "created_at": "2025-11-04T09:01:08.34994"
+  },
+  {
+    "id": "95b9745c-76ee-4fba-ab04-d285623d1dba",
+    "slug": "trai",
+    "name": "TRAI",
+    "description": "test",
+    "sort_order": 0,
+    "created_at": "2025-11-06T17:39:29.374569"
+  }
+]

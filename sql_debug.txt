@@ -1,0 +1,4 @@
+{
+  "sql": "select \"id\", \"full_name\", \"email\", \"phone\", \"role\", \"created_at\" from \"profiles\"",
+  "params": []
+}

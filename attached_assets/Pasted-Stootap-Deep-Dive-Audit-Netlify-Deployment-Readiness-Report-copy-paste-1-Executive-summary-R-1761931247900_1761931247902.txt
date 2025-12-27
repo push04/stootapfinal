@@ -1,0 +1,224 @@
+Stootap — Deep-Dive Audit & Netlify Deployment Readiness Report (copy-paste)
+1) Executive summary
+
+Root cause of Netlify failures: Netlify does not run a long-lived Node/Express server. Express apps must be deployed as Netlify Functions (serverless). Attempting to “start” an HTTP server on Netlify will fail. 
+docs.netlify.com
+answers.netlify.com
+
+What needs to change:
+
+Wrap the existing Express app as a Netlify Function (or migrate endpoints into Functions).
+
+Provide a netlify.toml that sets the publish directory for the built frontend and the functions directory for the backend.
+
+Ensure all required environment variables are set on Netlify (database, session secret, admin credentials, optional Razorpay/OpenRouter).
+
+Fix module path aliasing (e.g., @shared/...) so the server build resolves correctly in a serverless bundle.
+
+Use database-backed storage in production (the in-memory storage is not suitable for serverless).
+
+Limitations to account for: Netlify Functions have execution/memory constraints; plan APIs accordingly. 
+docs.netlify.com
+
+2) Why it’s not deploying to Netlify (diagnosis)
+
+Trying to run Express directly on Netlify.
+
+Netlify doesn’t host a persistent Node server; backend code must run as Functions. Netlify’s own guide states Express “works” on Netlify because of Netlify Functions (i.e., as serverless). 
+docs.netlify.com
+
+A Netlify Support guide reiterates: you cannot run your own server/database directly on Netlify. 
+answers.netlify.com
+
+Missing or incomplete Netlify configuration.
+
+Without netlify.toml, Netlify won’t know where your frontend build output (publish dir) and functions live. That leads to 404s or failed deploy behavior.
+
+Server bundle & module resolution issues.
+
+Use of TypeScript path aliases like @shared/... can cause “module not found” in serverless bundles unless the bundler (and/or tsconfig paths) is mirrored in the build tooling for functions.
+
+Any ESM/CJS mismatch or “directory import” assumptions can also cause build-time errors in the functions bundle.
+
+Environment variables not present at build/runtime.
+
+Missing SESSION_SECRET, DATABASE_URL (or the Supabase pooler creds), ADMIN_USERNAME, ADMIN_PASSWORD_HASH, etc., will break startup and/or admin auth in production.
+
+Stateful/in-memory pieces.
+
+Any in-memory storage (caches, carts, temp stores) will be ephemeral on serverless—each function invocation is isolated. Production must use the database-backed implementations.
+
+Webhook/raw body handling.
+
+Payment webhooks (e.g., Razorpay) that require the raw request body must be adapted to Netlify Functions semantics (no direct express.raw() unless wrapped correctly).
+
+Database connection strategy.
+
+Use a serverless-friendly connection (Supabase/Neon poolers). Incorrect connection strings (or missing sslmode=require) cause connection errors during function execution.
+
+Function/route pathing.
+
+After moving Express into a Function, your API lives under /.netlify/functions/<name> (unless you add redirects/rewrites). Frontend fetch URLs must be adjusted accordingly.
+
+Function limits unaccounted for.
+
+Cold starts, timeouts, and memory constraints apply to Express-on-functions and should guide payload sizes, heavy processing, and long DB operations. 
+docs.netlify.com
+
+3) Concrete fixes to make the current codebase deployable on Netlify (no code, step-by-step wording)
+A) Backend: adapt Express to Netlify Functions
+
+Wrap your existing Express app using a Netlify adapter for Express, producing a single function handler that Netlify can invoke.
+
+Place the compiled handler into your Functions directory (see section 4C).
+
+Ensure any middleware that needs raw bodies (e.g., payment webhooks) is set up using an approach compatible with Netlify Functions.
+
+Audit all routes and confirm they’re mounted under the function path.
+
+Update frontend API calls to point to /.netlify/functions/<your-function>/<endpoint> (or add redirects so /api/* rewrites to the function).
+
+B) Storage & state
+
+Disable all in-memory stores for production. Use the database-backed storage implementation everywhere (carts, orders, leads, notifications, etc.).
+
+Confirm all SELECT/INSERT/UPDATE paths point to the database layer, not to in-memory fallbacks.
+
+C) Module resolution & build system
+
+Remove or resolve all TS path aliases (e.g., @shared/...). Either replace with relative imports or configure the bundler and TypeScript paths so the build for functions resolves them correctly.
+
+Ensure the server build outputs one handler per function and does not attempt to start a long-lived server.
+
+Check for ESM/CJS mismatches or “directory import” assumptions; they must be compatible with the Node version/functions runtime on Netlify.
+
+D) Environment variables (must be set in Netlify UI)
+
+Required:
+
+DATABASE_URL (serverless/postgres pooler; include SSL mode as required)
+
+SESSION_SECRET (long, random secret)
+
+ADMIN_USERNAME, ADMIN_PASSWORD_HASH (never use defaults)
+
+Optional depending on features:
+
+RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET (if payments are enabled)
+
+OPENROUTER_API_KEY, OPENROUTER_BASE_URL (if AI concierge is enabled)
+
+Put them in Site settings → Environment variables before deploying.
+
+E) Webhooks & security
+
+Verify webhook secrets and raw body verification logic with your Function handler.
+
+Enforce secure cookies, CORS rules, and no default admin credentials in production.
+
+4) Netlify deployment plan (end-to-end)
+A) Prerequisites
+
+A serverless-friendly Postgres (Supabase/Neon) with a verified connection string.
+
+Schema applied (e.g., via Supabase SQL editor/migrations).
+
+Admin credentials chosen and hashed beforehand (no defaults).
+
+B) Repository preparation
+
+Add a Netlify configuration that:
+
+Sets the publish directory to your built frontend.
+
+Sets the functions directory to where your serverless build outputs Express-as-a-function.
+
+(Optional) Adds caching headers for assets and basic security headers.
+
+Move/convert the Express server to a Netlify Function handler.
+
+Replace or resolve TS path aliases used by the server code.
+
+Ensure frontend fetch requests target the function path (or add redirects).
+
+C) Netlify settings
+
+In the site’s settings:
+
+Build command: your build script that produces both the frontend assets and the function handler bundle.
+
+Publish directory: the folder containing built static assets (the Vite build output).
+
+Functions directory: the folder containing the built function bundle.
+
+Environment variables: add all required ones (Section 3D).
+
+D) Deploy and verify
+
+Connect the GitHub repo in Netlify → trigger a deploy.
+
+After deploy:
+
+Load the site root to verify static assets load.
+
+Hit a few API endpoints via /.netlify/functions/<name>/... (or your rewrites) to confirm JSON responses and DB connectivity.
+
+Test admin login, create/read orders, cart flow, and (if enabled) Razorpay test payments.
+
+E) Known constraints & trade-offs
+
+Express on Netlify works via Functions, not a dedicated Node server. 
+docs.netlify.com
+
+All function limitations apply (timeout/memory). Design API handlers for quick execution and avoid heavy synchronous work. 
+docs.netlify.com
+
+5) Security hardening (production)
+
+Replace default admin credentials. Generate and set a strong ADMIN_PASSWORD_HASH; rotate regularly.
+
+Long random SESSION_SECRET. Minimum 32+ bytes.
+
+HTTP security headers: frame options, content type options, referrer policy; add strict CSP if feasible.
+
+Limit PII exposure: audit logs and responses for accidental leakage.
+
+Rate limiting & DoS resilience: especially for auth and payment endpoints.
+
+Webhook signing: verify signatures on payment webhooks before processing.
+
+6) API & data integrity improvements
+
+DB-first validation: enforce constraints at the DB layer (FKs, unique indexes) and mirror with runtime validation.
+
+Idempotency keys: for order creation and payment callbacks to prevent duplicates.
+
+Pagination & filtering: for admin lists (orders, leads) to keep responses small in functions.
+
+Audit trail completeness: ensure all state-changing actions write audit logs.
+
+7) Frontend improvements for serverless compatibility
+
+Absolute API base: set a single source of truth for the API base path that points to your Netlify Function endpoint (or use rewrites).
+
+Graceful failures: standardized error toasts and retry logic for transient 5xx from cold starts.
+
+Static asset optimization: image compression and long-cache headers for assets.
+
+8) Observability & QA
+
+Function logs: monitor via Netlify UI/CLI to catch runtime errors and timeouts.
+
+Synthetics: ping health endpoints and a smoke-script that adds/removes a cart item.
+
+Error tracking: integrate a client/server error tracker compatible with serverless.
+
+Load tests (short bursts): verify you stay below function limits with DB poolers.
+
+9) Performance guidance for Netlify Functions
+
+Keep handlers lean: avoid heavy synchronous work. Offload long tasks to background jobs off-platform if needed.
+
+Use connection poolers (Supabase/Neon) and reuse connections when the runtime is warm.
+
+Cache safe data at the edge (CDN for static, consider edge functions for read-only endpoints if needed).

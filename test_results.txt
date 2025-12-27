@@ -1,0 +1,4 @@
+Starting Tests
+Unquoted: FAILED (relation "profiles" does not exist)
+Quoted: FAILED (relation "profiles" does not exist)
+Public: FAILED (relation "public.profiles" does not exist)
