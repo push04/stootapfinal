@@ -339,10 +339,10 @@ export default function CompanyPackages() {
                     <div className="container mx-auto px-4">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                             {[
-                                { label: "Companies Built", value: "100+", icon: Building2 },
-                                { label: "Success Rate", value: "95%", icon: Target },
-                                { label: "Avg. Time to Launch", value: "30 Days", icon: Zap },
-                                { label: "Funding Raised", value: "₹5Cr+", icon: IndianRupee }
+                                { label: "Companies Built", value: "4+", icon: Building2 },
+                                { label: "Success Rate", value: "100%", icon: Target },
+                                { label: "Avg. Time to Launch", value: "90 Days", icon: Zap },
+                                { label: "Funding Raised", value: "₹4.5 Lakhs", icon: IndianRupee }
                             ].map((stat, index) => (
                                 <motion.div
                                     key={stat.label}
