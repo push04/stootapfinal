@@ -42,7 +42,22 @@ import {
   jobPostPayments,
   companySubscriptions,
   savedJobs,
-  savedCompanies
+  savedCompanies,
+  tickets,
+  ticketReplies,
+  documents,
+  auditLogs,
+  siteContent,
+  type Ticket,
+  type InsertTicket,
+  type TicketReply,
+  type InsertTicketReply,
+  type AuditLog,
+  type InsertAuditLog,
+  type SiteContent,
+  type InsertSiteContent,
+  type Document,
+  type InsertDocument
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -536,28 +551,109 @@ export class DrizzleStorage implements IStorage {
     return sub;
   }
 
-  // Stubs for compatibility
-  async getUserNotifications(userId: string): Promise<any[]> { return []; }
-  async getUnreadNotifications(userId: string): Promise<any[]> { return []; }
-  async markNotificationRead(id: string): Promise<any> { return { id }; }
-  async markAllNotificationsRead(userId: string): Promise<void> { }
-  async getUserTickets(userId: string): Promise<any[]> { return []; }
-  async getAllTickets(): Promise<any[]> { return []; }
-  async createTicket(data: any): Promise<any> { return { id: "stub" }; }
-  async getTicketReplies(ticketId: string): Promise<any[]> { return []; }
-  async createTicketReply(data: any): Promise<any> { return { id: "stub" }; }
-  async updateTicket(id: string, data: any): Promise<any> { return { id: "stub" }; }
-  async getOrderDocuments(orderId: string): Promise<any[]> { return []; }
-  async createDocument(data: any): Promise<any> { return { id: "stub" }; }
-  async getAuditLogs(limit?: number): Promise<any[]> { return []; }
-  async createAuditLog(data: any): Promise<any> { return { id: "stub" }; }
-  async getAllSiteContent(): Promise<any[]> { return []; }
-  async getSiteContentBySection(section: string): Promise<any[]> { return []; }
-  async getSiteContentByKey(key: string): Promise<any> { return {}; }
-  async createSiteContent(data: any): Promise<any> { return { id: "stub" }; }
-  async updateSiteContent(id: string, data: any): Promise<any> { return { id: "stub" }; }
-  async updateSiteContentByKey(key: string, data: any): Promise<any> { return { id: "stub" }; }
-  async deleteSiteContent(id: string): Promise<boolean> { return true; }
+  // Notifications
+  async getUserNotifications(userId: string): Promise<Notification[]> {
+    return await db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+  }
+
+  async getUnreadNotifications(userId: string): Promise<Notification[]> {
+    return await db.select().from(notifications).where(and(eq(notifications.userId, userId), eq(notifications.read, false))).orderBy(desc(notifications.createdAt));
+  }
+
+  async markNotificationRead(id: string): Promise<Notification | undefined> {
+    const [notification] = await db.update(notifications).set({ read: true }).where(eq(notifications.id, id)).returning();
+    return notification;
+  }
+
+  async markAllNotificationsRead(userId: string): Promise<void> {
+    await db.update(notifications).set({ read: true }).where(eq(notifications.userId, userId));
+  }
+
+  // Tickets
+  async getUserTickets(userId: string): Promise<Ticket[]> {
+    return await db.select().from(tickets).where(eq(tickets.userId, userId)).orderBy(desc(tickets.createdAt));
+  }
+
+  async getAllTickets(): Promise<Ticket[]> {
+    return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+  }
+
+  async createTicket(data: InsertTicket): Promise<Ticket> {
+    const [ticket] = await db.insert(tickets).values(data).returning();
+    return ticket;
+  }
+
+  async getTicketReplies(ticketId: string): Promise<TicketReply[]> {
+    return await db.select().from(ticketReplies).where(eq(ticketReplies.ticketId, ticketId)).orderBy(ticketReplies.createdAt);
+  }
+
+  async createTicketReply(data: InsertTicketReply): Promise<TicketReply> {
+    const [reply] = await db.insert(ticketReplies).values(data).returning();
+
+    // Also update ticket updated_at
+    await db.update(tickets).set({ updatedAt: new Date() }).where(eq(tickets.id, data.ticketId));
+
+    return reply;
+  }
+
+  async updateTicket(id: string, data: Partial<Ticket>): Promise<Ticket | undefined> {
+    const [ticket] = await db.update(tickets).set(data).where(eq(tickets.id, id)).returning();
+    return ticket;
+  }
+
+  // Documents
+  async getOrderDocuments(orderId: string): Promise<Document[]> {
+    return await db.select().from(documents).where(eq(documents.orderId, orderId)).orderBy(desc(documents.uploadedAt));
+  }
+
+  async createDocument(data: InsertDocument): Promise<Document> {
+    const [doc] = await db.insert(documents).values(data).returning();
+    return doc;
+  }
+
+  // Audit Logs
+  async getAuditLogs(limit: number = 100): Promise<AuditLog[]> {
+    return await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
+  }
+
+  async createAuditLog(data: InsertAuditLog): Promise<AuditLog> {
+    const [log] = await db.insert(auditLogs).values(data).returning();
+    return log;
+  }
+
+  // Site Content
+  async getAllSiteContent(): Promise<SiteContent[]> {
+    return await db.select().from(siteContent);
+  }
+
+  async getSiteContentBySection(section: string): Promise<SiteContent[]> {
+    return await db.select().from(siteContent).where(eq(siteContent.section, section));
+  }
+
+  async getSiteContentByKey(key: string): Promise<SiteContent | undefined> {
+    const [content] = await db.select().from(siteContent).where(eq(siteContent.key, key));
+    return content;
+  }
+
+  async createSiteContent(data: InsertSiteContent): Promise<SiteContent> {
+    const [content] = await db.insert(siteContent).values(data).returning();
+    return content;
+  }
+
+  async updateSiteContent(id: string, data: Partial<InsertSiteContent>): Promise<SiteContent | undefined> {
+    const [content] = await db.update(siteContent).set(data).where(eq(siteContent.id, id)).returning();
+    return content;
+  }
+
+  async updateSiteContentByKey(key: string, data: Partial<InsertSiteContent>): Promise<SiteContent | undefined> {
+    const [content] = await db.update(siteContent).set(data).where(eq(siteContent.key, key)).returning();
+    return content;
+  }
+
+  async deleteSiteContent(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(siteContent).where(eq(siteContent.id, id)).returning();
+    return !!deleted;
+  }
 }
 
 export const storage = new DrizzleStorage();
