@@ -956,8 +956,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? ((completedOrders / orders.length) * 100).toFixed(1)
         : "0.0";
 
+      const users = await storage.getAllProfiles();
+
       const analytics = {
         totalOrders: orders.length,
+        totalUsers: users.length,
         pendingOrders,
         completedOrders,
         processingOrders,

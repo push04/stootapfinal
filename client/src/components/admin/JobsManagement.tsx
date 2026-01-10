@@ -128,7 +128,7 @@ export default function JobsManagement() {
 
     const feeMutation = useMutation({
         mutationFn: async ({ id, platformFeePaid }: { id: string; platformFeePaid: boolean }) => {
-            const res = await fetch(`/api/admin/opportunities/jobs/${id}/fee`, {
+            const res = await fetch(`/api/admin/opportunities/jobs/${id}/fee-status`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ platformFeePaid }),
