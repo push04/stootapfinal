@@ -726,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid role" });
       }
 
-      const updatedProfile = await storage.updateProfile(req.user.id, { role });
+      const updatedProfile = await storage.updateProfile(req.user.id, { role } as any);
       if (!updatedProfile) {
         return res.status(404).json({ error: "Profile not found" });
       }
@@ -997,6 +997,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(orders);
     } catch (error) {
       console.error("Admin get orders error:", error);
+      if (error instanceof Error) {
+        console.error("Stack trace:", error.stack);
+      }
       res.status(500).json({ error: "Failed to fetch orders" });
     }
   });
@@ -1092,16 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Management APIs
   app.get("/api/admin/users", requireAdmin, async (_req, res) => {
     try {
-      const { data } = await supabaseServer
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      // Transform to camelCase
-      const users = (data || []).map((user: any) => {
-        return toCamelCase(user);
-      });
-
+      const users = await storage.getAllProfiles();
       res.json(users);
     } catch (error) {
       console.error("Get users error:", error);
@@ -1608,6 +1602,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete site content" });
+    }
+  });
+
+  // Admin Notifications
+  app.post("/api/admin/notifications", requireAdmin, async (req, res) => {
+    try {
+      const { userId, title, message, type } = req.body;
+
+      if (!userId || !title || !message) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const notification = await storage.createNotification({
+        userId,
+        title,
+        message,
+        type: type || "admin_message",
+        read: false,
+        createdAt: new Date(),
+      } as any); // cast to any to avoid strict type issues with optional fields
+
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Create notification error:", error);
+      res.status(500).json({ error: "Failed to send notification" });
     }
   });
 

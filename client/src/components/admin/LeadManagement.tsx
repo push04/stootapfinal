@@ -239,6 +239,10 @@ export default function LeadManagement() {
                 <SelectItem value="general">General</SelectItem>
                 <SelectItem value="ai_concierge">AI Concierge</SelectItem>
                 <SelectItem value="service_inquiry">Service Inquiry</SelectItem>
+                <SelectItem value="mentorship_booking">Mentorship Booking</SelectItem>
+                <SelectItem value="package_inquiry">Package Inquiry</SelectItem>
+                <SelectItem value="startup">Startup</SelectItem>
+                <SelectItem value="contact">Contact</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={handleSearch} size="sm" className="gap-2">

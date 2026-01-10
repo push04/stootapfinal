@@ -1,5 +1,10 @@
 import type { Express, Request } from "express";
 import { storage } from "./storage";
+import { isAdminAuthenticated } from "./auth";
+import { ZodError, z } from "zod";
+import { insertCompanySchema, insertJobPostSchema, insertJobApplicationSchema, type InsertCompany, type InsertJobPost, type InsertJobApplication } from "@shared/schema";
+import crypto from "crypto";
+import Razorpay from "razorpay";
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -7,10 +12,6 @@ declare module 'express-serve-static-core' {
     session?: any;
   }
 }
-import { ZodError, z } from "zod";
-import { insertCompanySchema, insertJobPostSchema, insertJobApplicationSchema, type InsertCompany, type InsertJobPost, type InsertJobApplication } from "@shared/schema";
-import crypto from "crypto";
-import Razorpay from "razorpay";
 
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
@@ -27,6 +28,168 @@ function generateSlug(title: string): string {
 }
 
 export function registerOpportunitiesRoutes(app: Express) {
+
+  // ============ ADMIN ROUTES (Moved inside function) ============
+
+  // Get all companies (admin)
+  app.get("/api/admin/opportunities/companies", async (req, res) => {
+    try {
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const companies = await storage.getAllCompanies();
+      res.json(companies);
+    } catch (error) {
+      console.error("Admin get companies error:", error);
+      res.status(500).json({ error: "Failed to fetch companies" });
+    }
+  });
+
+  // Verify/unverify company (admin)
+  app.patch("/api/admin/opportunities/companies/:id/verify", async (req, res) => {
+    try {
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { verified } = req.body;
+      const updated = await storage.updateCompany(req.params.id, { verified });
+      res.json(updated);
+    } catch (error) {
+      console.error("Admin verify company error:", error);
+      res.status(500).json({ error: "Failed to update company" });
+    }
+  });
+
+  // Disable company (admin)
+  app.patch("/api/admin/opportunities/companies/:id/status", async (req, res) => {
+    try {
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { status } = req.body;
+      const updated = await storage.updateCompany(req.params.id, { status });
+      res.json(updated);
+    } catch (error) {
+      console.error("Admin update company status error:", error);
+      res.status(500).json({ error: "Failed to update company" });
+    }
+  });
+
+  // Get all job posts (admin)
+  app.get("/api/admin/opportunities/jobs", async (req, res) => {
+    try {
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const jobs = await storage.getAllJobPosts();
+      const jobsWithCompany = await Promise.all(jobs.map(async (job) => {
+        const company = await storage.getCompany(job.companyId);
+        return { ...job, company };
+      }));
+      res.json(jobsWithCompany);
+    } catch (error) {
+      console.error("Admin get jobs error:", error);
+      res.status(500).json({ error: "Failed to fetch jobs" });
+    }
+  });
+
+  // Disable job (admin)
+  app.patch("/api/admin/opportunities/jobs/:id/status", async (req, res) => {
+    try {
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { status } = req.body;
+      const updated = await storage.updateJobPost(req.params.id, { status });
+      res.json(updated);
+    } catch (error) {
+      console.error("Admin update job status error:", error);
+      res.status(500).json({ error: "Failed to update job" });
+    }
+  });
+
+  // Update job fee status (admin)
+  app.patch("/api/admin/opportunities/jobs/:id/fee-status", async (req, res) => {
+    try {
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { platformFeePaid } = req.body;
+      const updated = await storage.updateJobPost(req.params.id, { platformFeePaid });
+      res.json(updated);
+    } catch (error) {
+      console.error("Admin update job fee status error:", error);
+      res.status(500).json({ error: "Failed to update job fee status" });
+    }
+  });
+
+  // Create job post (admin)
+  app.post("/api/admin/opportunities/jobs", async (req, res) => {
+    try {
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { title, companyId, roleType, isPaid, salaryMin, salaryMax, experienceLevel, locationType, city, description } = req.body;
+
+      if (!title || !companyId || !description) {
+        return res.status(400).json({ error: "Title, company, and description are required" });
+      }
+
+      const company = await storage.getCompany(companyId);
+      if (!company) {
+        return res.status(400).json({ error: "Company not found" });
+      }
+
+      const slug = generateSlug(title);
+
+      const jobData = {
+        companyId,
+        title,
+        slug,
+        roleType: roleType || "full_time",
+        isPaid: isPaid !== false,
+        salaryMin: salaryMin ? parseFloat(salaryMin) : null,
+        salaryMax: salaryMax ? parseFloat(salaryMax) : null,
+        experienceLevel: experienceLevel || "entry",
+        locationType: locationType || "onsite",
+        city: city || null,
+        description,
+        status: "active",
+        visibility: "standard",
+        platformFeePaid: true,
+      };
+
+      // @ts-ignore
+      const job = await storage.createJobPost(jobData);
+      res.status(201).json(job);
+    } catch (error) {
+      console.error("Admin create job error:", error);
+      res.status(500).json({ error: "Failed to create job" });
+    }
+  });
+
+  // Update job (admin)
+  app.patch("/api/admin/opportunities/jobs/:id", async (req, res) => {
+    try {
+      if (!isAdminAuthenticated(req)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const updated = await storage.updateJobPost(req.params.id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Admin update job error:", error);
+      res.status(500).json({ error: "Failed to update job" });
+    }
+  });
+
   // ============ PUBLIC ROUTES ============
 
   // Get all active job posts
@@ -662,272 +825,6 @@ export function registerOpportunitiesRoutes(app: Express) {
     } catch (error) {
       console.error("Create subscription payment error:", error);
       res.status(500).json({ error: "Failed to create payment order" });
-    }
-  });
-
-  // ============ ADMIN ROUTES ============
-
-  // Get all companies (admin)
-  app.get("/api/admin/opportunities/companies", async (req, res) => {
-    try {
-      // Simple admin check - you may want more robust admin verification
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const companies = await storage.getAllCompanies();
-      res.json(companies);
-    } catch (error) {
-      console.error("Admin get companies error:", error);
-      res.status(500).json({ error: "Failed to fetch companies" });
-    }
-  });
-
-  // Verify/unverify company (admin)
-  app.patch("/api/admin/opportunities/companies/:id/verify", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { verified } = req.body;
-      const updated = await storage.updateCompany(req.params.id, { verified });
-      res.json(updated);
-    } catch (error) {
-      console.error("Admin verify company error:", error);
-      res.status(500).json({ error: "Failed to update company" });
-    }
-  });
-
-  // Disable company (admin)
-  app.patch("/api/admin/opportunities/companies/:id/status", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { status } = req.body;
-      const updated = await storage.updateCompany(req.params.id, { status });
-      res.json(updated);
-    } catch (error) {
-      console.error("Admin update company status error:", error);
-      res.status(500).json({ error: "Failed to update company" });
-    }
-  });
-
-  // Get all job posts (admin)
-  app.get("/api/admin/opportunities/jobs", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const jobs = await storage.getAllJobPosts();
-      const jobsWithCompany = await Promise.all(jobs.map(async (job) => {
-        const company = await storage.getCompany(job.companyId);
-        return { ...job, company };
-      }));
-      res.json(jobsWithCompany);
-    } catch (error) {
-      console.error("Admin get jobs error:", error);
-      res.status(500).json({ error: "Failed to fetch jobs" });
-    }
-  });
-
-  // Disable job (admin)
-  app.patch("/api/admin/opportunities/jobs/:id/status", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { status } = req.body;
-      const updated = await storage.updateJobPost(req.params.id, { status });
-      res.json(updated);
-    } catch (error) {
-      console.error("Admin update job status error:", error);
-      res.status(500).json({ error: "Failed to update job" });
-    }
-  });
-
-  // Update job fee status (admin)
-  app.patch("/api/admin/opportunities/jobs/:id/fee-status", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { platformFeePaid } = req.body;
-      const updated = await storage.updateJobPost(req.params.id, { platformFeePaid });
-      res.json(updated);
-    } catch (error) {
-      console.error("Admin update job fee status error:", error);
-      res.status(500).json({ error: "Failed to update job fee status" });
-    }
-  });
-
-  // Create job post (admin)
-  app.post("/api/admin/opportunities/jobs", async (req, res) => {
-    try {
-      const { title, companyId, roleType, isPaid, salaryMin, salaryMax, experienceLevel, locationType, city, description } = req.body;
-
-      if (!title || !companyId || !description) {
-        return res.status(400).json({ error: "Title, company, and description are required" });
-      }
-
-      const company = await storage.getCompany(companyId);
-      if (!company) {
-        return res.status(400).json({ error: "Company not found" });
-      }
-
-      const slug = generateSlug(title);
-
-      const jobData = {
-        companyId,
-        title,
-        slug,
-        roleType: roleType || "full_time",
-        isPaid: isPaid !== false,
-        salaryMin: salaryMin ? parseFloat(salaryMin) : null,
-        salaryMax: salaryMax ? parseFloat(salaryMax) : null,
-        experienceLevel: experienceLevel || "entry",
-        locationType: locationType || "onsite",
-        city: city || null,
-        description,
-        status: "active",
-        visibility: "standard",
-        platformFeePaid: true,
-      };
-
-      const job = await storage.createJobPost(jobData as any);
-      res.status(201).json(job);
-    } catch (error) {
-      console.error("Admin create job error:", error);
-      res.status(500).json({ error: "Failed to create job" });
-    }
-  });
-
-  // Update job (admin)
-  app.patch("/api/admin/opportunities/jobs/:id", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const updated = await storage.updateJobPost(req.params.id, req.body);
-      if (!updated) {
-        return res.status(404).json({ error: "Job not found" });
-      }
-      res.json(updated);
-    } catch (error) {
-      console.error("Admin update job error:", error);
-      res.status(500).json({ error: "Failed to update job" });
-    }
-  });
-
-  // Delete job (admin)
-  app.delete("/api/admin/opportunities/jobs/:id", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      await storage.deleteJobPost(req.params.id);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Admin delete job error:", error);
-      res.status(500).json({ error: "Failed to delete job" });
-    }
-  });
-
-  // Alias for fee endpoint
-  app.patch("/api/admin/opportunities/jobs/:id/fee", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { platformFeePaid } = req.body;
-      const updated = await storage.updateJobPost(req.params.id, { platformFeePaid });
-      res.json(updated);
-    } catch (error) {
-      console.error("Admin update job fee error:", error);
-      res.status(500).json({ error: "Failed to update job fee" });
-    }
-  });
-
-  // Create company (admin)
-  app.post("/api/admin/opportunities/companies", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const { companyName, contactName, contactEmail, phone, businessType, industry, website, location, description } = req.body;
-
-      if (!companyName || !contactName || !contactEmail) {
-        return res.status(400).json({ error: "Company name, contact name, and email are required" });
-      }
-
-      const companyData = {
-        userId: req.user.id || "admin",
-        companyName,
-        contactName,
-        contactEmail,
-        phone: phone || null,
-        businessType: businessType || "llp",
-        industry: industry || null,
-        website: website || null,
-        location: location || null,
-        description: description || null,
-        verified: true,
-        status: "active",
-      };
-
-      const company = await storage.createCompany(companyData as any);
-      res.status(201).json(company);
-    } catch (error) {
-      console.error("Admin create company error:", error);
-      res.status(500).json({ error: "Failed to create company" });
-    }
-  });
-
-  // Update company (admin)
-  app.patch("/api/admin/opportunities/companies/:id", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const updated = await storage.updateCompany(req.params.id, req.body);
-      if (!updated) {
-        return res.status(404).json({ error: "Company not found" });
-      }
-      res.json(updated);
-    } catch (error) {
-      console.error("Admin update company error:", error);
-      res.status(500).json({ error: "Failed to update company" });
-    }
-  });
-
-  // Delete company (admin)
-  app.delete("/api/admin/opportunities/companies/:id", async (req, res) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      // Delete associated jobs first
-      const jobs = await storage.getJobPostsByCompany(req.params.id);
-      for (const job of jobs) {
-        await storage.deleteJobPost(job.id);
-      }
-
-      await storage.deleteCompany(req.params.id);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Admin delete company error:", error);
-      res.status(500).json({ error: "Failed to delete company" });
     }
   });
 }
