@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { User, Mail, Phone, Lock, AlertCircle, LogOut, ShoppingBag, Shield, Eye, EyeOff, Package, Activity, Bell, Settings, TrendingUp, Calendar, CreditCard, Building2 } from "lucide-react";
+import { User, Mail, Phone, Lock, AlertCircle, LogOut, ShoppingBag, Shield, Eye, EyeOff, Package, Activity, Bell, Settings, TrendingUp, Calendar, CreditCard, Building2, MessageSquare } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
@@ -29,6 +29,7 @@ import { format } from "date-fns";
 import { StudentProfile } from "@/components/profiles/StudentProfile";
 import { BusinessProfile } from "@/components/profiles/BusinessProfile";
 import { ProfileSwitcher } from "@/components/ProfileSwitcher";
+import { MessagesTab } from "@/components/profile/MessagesTab";
 import { useQuery } from "@tanstack/react-query";
 
 interface UserProfile {
@@ -463,6 +464,12 @@ export default function Profile() {
                         <span className="hidden sm:inline font-bold">Preferences</span>
                       </TabsTrigger>
 
+                      {/* Messages tab for everyone */}
+                      <TabsTrigger value="messages" className="py-2.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 transition-all font-semibold">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline font-bold">Messages</span>
+                      </TabsTrigger>
+
                       {/* Security tab for everyone */}
                       <TabsTrigger value="security" className="py-2.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm data-[state=active]:text-orange-600 transition-all font-semibold">
                         <Shield className="h-4 w-4 mr-2" />
@@ -471,6 +478,9 @@ export default function Profile() {
                     </TabsList>
                   </CardHeader>
                   <CardContent>
+                    <TabsContent value="messages" className="mt-0">
+                      <MessagesTab userId={profile.id} />
+                    </TabsContent>
                     {/* Role-Specific Dashboard Tab */}
                     {profile.role === "student" && (
                       <TabsContent value="dashboard" className="mt-0">

@@ -83,6 +83,7 @@ export default function UserManagement() {
     email: "",
     phone: "",
     role: "business",
+    password: "",
   });
 
   const resetForm = () => {
@@ -91,6 +92,7 @@ export default function UserManagement() {
       email: "",
       phone: "",
       role: "business",
+      password: "",
     });
   };
 
@@ -622,6 +624,16 @@ export default function UserManagement() {
               />
             </div>
             <div>
+              <Label htmlFor="create-password">Password *</Label>
+              <Input
+                id="create-password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="********"
+              />
+            </div>
+            <div>
               <Label htmlFor="create-role">User Role *</Label>
               <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
                 <SelectTrigger>
@@ -654,7 +666,7 @@ export default function UserManagement() {
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={submitting}>
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={submitting || !formData.fullName || !formData.email}>
+            <Button onClick={handleCreate} disabled={submitting || !formData.fullName || !formData.email || !formData.password}>
               {submitting ? "Creating..." : "Create User"}
             </Button>
           </DialogFooter>

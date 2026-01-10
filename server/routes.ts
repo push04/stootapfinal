@@ -1108,14 +1108,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/users", requireAdmin, async (req, res) => {
     try {
-      const userData = toSnakeCase(req.body);
+      const { email, password, fullName, phone, role } = req.body;
+
+      if (!email || !password || !fullName) {
+        return res.status(400).json({ error: "Email, password, and full name are required" });
+      }
+
+      // 1. Create user in Supabase Auth
+      const { data: authData, error: authError } = await supabaseServer.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName, role: role || "student" }
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Failed to create auth user");
+
+      // 2. Create profile linked to auth user
+      const userData = {
+        id: authData.user.id,
+        fullName,
+        email,
+        phone,
+        role: role || "student",
+        createdAt: new Date().toISOString(),
+        username: email.split('@')[0], // Generate a temporary username
+        completed: true // Mark profile as completed by default for admin created users
+      };
+
       const { data, error } = await supabaseServer
         .from("profiles")
-        .insert(userData)
+        .insert(toSnakeCase(userData))
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Rollback auth user creation if profile creation fails? 
+        // For now, allow manual fix or retry. Better to log error.
+        console.error("Profile creation failed after auth user created:", error);
+        throw error;
+      }
+
       res.json(toCamelCase(data));
     } catch (error) {
       console.error("Create user error:", error);
