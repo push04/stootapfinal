@@ -42,10 +42,28 @@ export default function Checkout() {
 
   const sessionId = localStorage.getItem("sessionId") || "";
 
+  const [profile, setProfile] = useState<any>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
   useEffect(() => {
+    checkAuth();
     loadCart();
     loadRazorpayScript();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch("/api/me");
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error("Auth check failed:", error);
+    } finally {
+      setAuthChecked(true);
+    }
+  };
 
   const loadRazorpayScript = () => {
     if (window.Razorpay) {
@@ -407,6 +425,38 @@ export default function Checkout() {
               <p className="text-sm text-muted-foreground">
                 Redirecting to home page...
               </p>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (authChecked && (!profile || (profile.role !== "business" && profile.role !== "company"))) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+        <Navigation />
+        <div className="min-h-[80vh] flex items-center justify-center px-4">
+          <Card className="max-w-md w-full text-center">
+            <CardContent className="pt-8 pb-8">
+              <ShoppingBag className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-2">Business Account Required</h2>
+              <p className="text-muted-foreground mb-6">
+                Service orders can only be purchased by Business Profiles.
+                {!profile ? " Please log in or register." : " Please switch your profile type."}
+              </p>
+
+              {!profile ? (
+                <div className="flex gap-4 justify-center">
+                  <Button onClick={() => setLocation("/login")}>Log In</Button>
+                  <Button variant="outline" onClick={() => setLocation("/register")}>Register</Button>
+                </div>
+              ) : (
+                <Button onClick={() => setLocation("/profile")}>
+                  Go to Profile to Switch
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
