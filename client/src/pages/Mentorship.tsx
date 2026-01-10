@@ -120,8 +120,8 @@ export default function Mentorship() {
 
             <main className="flex-1">
                 {/* Hero Section */}
-                <section className="relative py-20 lg:py-28 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 overflow-hidden">
-                    <div className="absolute inset-0 bg-grid-slate-700/20 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+                <section className="relative py-20 lg:py-28 bg-gradient-to-br from-primary/10 via-background to-muted overflow-hidden dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-900">
+                    <div className="absolute inset-0 bg-grid-slate-200/50 dark:bg-grid-slate-700/20 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
 
                     <div className="container mx-auto px-4 relative">
                         <div className="max-w-4xl mx-auto text-center">
@@ -134,7 +134,7 @@ export default function Mentorship() {
 
                             <motion.h1
                                 {...fadeIn}
-                                className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6"
+                                className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6"
                             >
                                 Talk Directly.
                                 <span className="block text-primary mt-2">Decide Clearly.</span>
@@ -142,13 +142,13 @@ export default function Mentorship() {
 
                             <motion.p
                                 {...fadeIn}
-                                className="text-lg md:text-xl text-zinc-300 mb-10 max-w-2xl mx-auto"
+                                className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto"
                             >
                                 A direct, no-fluff, strategic conversation with a business expert to solve real problems, validate decisions, or plan your next move.
                             </motion.p>
 
                             <motion.div {...fadeIn}>
-                                <p className="text-zinc-400 mb-8 italic">
+                                <p className="text-muted-foreground mb-8 italic">
                                     This is not a motivational session. <span className="text-primary font-semibold">This is business clarity.</span>
                                 </p>
                             </motion.div>
@@ -163,7 +163,7 @@ export default function Mentorship() {
                                     Book Your Session
                                 </Button>
                                 <Link href="/packages">
-                                    <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-zinc-600 text-white hover:bg-zinc-800">
+                                    <Button size="lg" variant="outline" className="text-lg px-8 py-6">
                                         <Building2 className="mr-2 h-5 w-5" />
                                         View Packages Instead
                                     </Button>

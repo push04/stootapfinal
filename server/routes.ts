@@ -117,6 +117,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Package Inquiries API
+  app.post("/api/package-inquiries", async (req, res) => {
+    try {
+      const { insertLeadSchema } = await import("@shared/schema");
+      const { name, email, phone, packageType, businessStage, message } = req.body;
+
+      const validated = insertLeadSchema.parse({
+        name,
+        email,
+        phone,
+        role: "business",
+        message: message || `Package Inquiry: ${packageType}`,
+        kind: "package_inquiry",
+        capturedVia: "web_form",
+        metadata: {
+          packageType,
+          businessStage,
+        }
+      });
+
+      const lead = await storage.createLead(validated as any);
+      res.json(lead);
+    } catch (error) {
+      if (error instanceof Error && error.name === "ZodError") {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: (error as any).errors
+        });
+      }
+      console.error("Package inquiry error:", error);
+      res.status(400).json({ error: "Failed to submit package inquiry" });
+    }
+  });
+
+  // Mentorship Bookings API
+  app.post("/api/mentorship-bookings", async (req, res) => {
+    try {
+      const { insertLeadSchema } = await import("@shared/schema");
+      const { name, email, phone, sessionType, isStudent, studentId, topic, preferredDate, preferredTime, price } = req.body;
+
+      const validated = insertLeadSchema.parse({
+        name,
+        email,
+        phone,
+        role: isStudent ? "student" : "business",
+        message: topic,
+        kind: "mentorship_booking",
+        capturedVia: "web_form",
+        metadata: {
+          sessionType,
+          isStudent,
+          studentId: studentId || null,
+          preferredDate: preferredDate || null,
+          preferredTime: preferredTime || null,
+          price,
+        }
+      });
+
+      const lead = await storage.createLead(validated as any);
+      res.json(lead);
+    } catch (error) {
+      if (error instanceof Error && error.name === "ZodError") {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: (error as any).errors
+        });
+      }
+      console.error("Mentorship booking error:", error);
+      res.status(400).json({ error: "Failed to submit mentorship booking" });
+    }
+  });
+
   // Cart API
   app.get("/api/cart/:sessionId", async (req, res) => {
     const { sessionId } = req.params;

@@ -1,9 +1,12 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { ShinyButton } from "@/components/ui/shiny-button";
 import { ShieldCheck, Lock, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Hero() {
+  const [, navigate] = useLocation();
+
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-background pointer-events-none" />
@@ -46,18 +49,9 @@ export default function Hero() {
               whileTap={{ scale: 0.98 }}
               className="relative"
             >
-              {/* Glow effect for both light and dark mode */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 rounded-lg blur-md opacity-75 group-hover:opacity-100 animate-pulse" />
-              <Button
-                asChild
-                size="lg"
-                className="relative text-base px-10 py-6 bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 hover:from-orange-500 hover:via-amber-400 hover:to-orange-500 text-white font-semibold shadow-2xl shadow-orange-500/30 dark:shadow-orange-500/40 border-0 ring-2 ring-orange-400/50"
-                data-testid="button-packages-cta"
-              >
-                <Link href="/packages">
-                  View Company Packages
-                </Link>
-              </Button>
+              <ShinyButton className="text-base px-10 py-6 h-auto shadow-2xl shadow-orange-500/30 dark:shadow-orange-500/40 border-0 ring-2 ring-orange-400/50" onClick={() => navigate("/packages")}>
+                View Company Packages
+              </ShinyButton>
             </motion.div>
             <motion.div
               whileHover={{ y: -2, scale: 1.02 }}

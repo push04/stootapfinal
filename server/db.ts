@@ -1,9 +1,10 @@
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import "dotenv/config";
+import * as schema from "@shared/schema";
 
 // Lazy initialization state
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: PostgresJsDatabase<typeof schema> | null = null;
 let _queryClient: ReturnType<typeof postgres> | null = null;
 let _initError: Error | null = null;
 let _initialized = false;
@@ -26,7 +27,7 @@ function getDatabaseConnectionString(): string | null {
 }
 
 // Initialize db on first access
-function initDb(): ReturnType<typeof drizzle> {
+function initDb(): PostgresJsDatabase<typeof schema> {
   if (_db !== null) return _db;
 
   if (_initError !== null) {
@@ -51,7 +52,7 @@ function initDb(): ReturnType<typeof drizzle> {
       connect_timeout: 30,
     });
 
-    _db = drizzle(_queryClient);
+    _db = drizzle(_queryClient, { schema });
     _initialized = true;
     console.log("[DB] Database connection ready");
     return _db;
@@ -74,7 +75,7 @@ const dbHandler: ProxyHandler<object> = {
   }
 };
 
-export const db = new Proxy({} as ReturnType<typeof drizzle>, dbHandler);
+export const db = new Proxy({} as PostgresJsDatabase<typeof schema>, dbHandler);
 
 export function isDatabaseAvailable(): boolean {
   return _initialized;

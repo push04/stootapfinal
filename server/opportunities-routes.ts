@@ -154,6 +154,7 @@ export function registerOpportunitiesRoutes(app: Express) {
       }
 
       const jobs = await storage.getJobPostsByCompany(company.id);
+      console.log(`[DEBUG] Fetched ${jobs.length} jobs for company ${company.id} (User: ${req.user.id})`);
 
       // Get application counts for each job
       const jobsWithCounts = await Promise.all(jobs.map(async (job) => {

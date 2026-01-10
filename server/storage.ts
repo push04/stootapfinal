@@ -403,7 +403,7 @@ export class DrizzleStorage implements IStorage {
     return company;
   }
 
-  async updateCompany(id: string, updates: Partial<InsertCompany>): Promise<Company | undefined> {
+  async updateCompany(id: string, updates: Partial<Company>): Promise<Company | undefined> {
     const [company] = await db.update(companies).set(updates).where(eq(companies.id, id)).returning();
     return company;
   }
@@ -447,7 +447,7 @@ export class DrizzleStorage implements IStorage {
     return job;
   }
 
-  async updateJobPost(id: string, updates: Partial<InsertJobPost>): Promise<JobPost | undefined> {
+  async updateJobPost(id: string, updates: Partial<JobPost>): Promise<JobPost | undefined> {
     const [job] = await db.update(jobPosts).set(updates).where(eq(jobPosts.id, id)).returning();
     return job;
   }
@@ -485,7 +485,7 @@ export class DrizzleStorage implements IStorage {
     return !!app;
   }
 
-  async updateJobApplication(id: string, updates: Partial<InsertJobApplication>): Promise<JobApplication | undefined> {
+  async updateJobApplication(id: string, updates: Partial<JobApplication>): Promise<JobApplication | undefined> {
     const [app] = await db.update(jobApplications).set(updates).where(eq(jobApplications.id, id)).returning();
     return app;
   }
@@ -520,7 +520,7 @@ export class DrizzleStorage implements IStorage {
     return p;
   }
 
-  async updateJobPostPayment(id: string, updates: Partial<InsertJobPostPayment>): Promise<JobPostPayment | undefined> {
+  async updateJobPostPayment(id: string, updates: Partial<JobPostPayment>): Promise<JobPostPayment | undefined> {
     const [p] = await db.update(jobPostPayments).set(updates).where(eq(jobPostPayments.id, id)).returning();
     return p;
   }

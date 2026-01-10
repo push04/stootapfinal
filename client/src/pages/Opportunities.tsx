@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { fetchWithAuth } from "@/lib/api-client";
@@ -202,6 +202,8 @@ export default function Opportunities() {
   const [roleTypeFilter, setRoleTypeFilter] = useState<string>("");
   const [locationFilter, setLocationFilter] = useState<string>("");
 
+  const [, navigate] = useLocation();
+
   // Check if user is authenticated and their role
   const { data: user } = useQuery({
     queryKey: ["/api/me"],
@@ -211,6 +213,12 @@ export default function Opportunities() {
       return res.json();
     },
   });
+
+  // Redirect company users to dashboard
+  if (user?.role === "company") {
+    navigate("/company/dashboard");
+    return null; // Or a loading spinner
+  }
 
   const { data: jobs, isLoading } = useQuery<JobPost[]>({
     queryKey: ["/api/opportunities/jobs", roleTypeFilter, locationFilter],

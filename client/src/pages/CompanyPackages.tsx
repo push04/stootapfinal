@@ -26,7 +26,8 @@ import {
     Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { ShinyButton } from "@/components/ui/shiny-button";
 
 const fadeIn = {
     initial: { opacity: 0, y: 20 },
@@ -286,8 +287,8 @@ export default function CompanyPackages() {
 
             <main className="flex-1">
                 {/* Hero Section */}
-                <section className="relative py-20 lg:py-28 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 overflow-hidden">
-                    <div className="absolute inset-0 bg-grid-slate-700/20 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+                <section className="relative py-20 lg:py-28 bg-gradient-to-br from-primary/10 via-background to-muted overflow-hidden dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-900">
+                    <div className="absolute inset-0 bg-grid-slate-200/50 dark:bg-grid-slate-700/20 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
 
                     <div className="container mx-auto px-4 relative">
                         <div className="max-w-4xl mx-auto text-center">
@@ -300,7 +301,7 @@ export default function CompanyPackages() {
 
                             <motion.h1
                                 {...fadeIn}
-                                className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6"
+                                className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6"
                             >
                                 We don't just register companies.
                                 <span className="block text-primary mt-2">We architect businesses.</span>
@@ -308,22 +309,21 @@ export default function CompanyPackages() {
 
                             <motion.p
                                 {...fadeIn}
-                                className="text-lg md:text-xl text-zinc-300 mb-10 max-w-2xl mx-auto"
+                                className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto"
                             >
                                 From idea validation to investor readiness — choose the package that matches your stage and let us build your business foundation.
                             </motion.p>
 
                             <motion.div {...fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <Button
-                                    size="lg"
-                                    className="text-lg px-8 py-6 shadow-lg"
+                                <ShinyButton
+                                    className="text-lg px-8 py-6 shadow-lg h-auto"
                                     onClick={() => setShowInquiryForm(true)}
                                 >
-                                    <Briefcase className="mr-2 h-5 w-5" />
+                                    <Briefcase className="mr-2 h-5 w-5 inline-block" />
                                     Get Started Today
-                                </Button>
+                                </ShinyButton>
                                 <Link href="/mentorship">
-                                    <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-zinc-600 text-white hover:bg-zinc-800">
+                                    <Button size="lg" variant="outline" className="text-lg px-8 py-6">
                                         <Users className="mr-2 h-5 w-5" />
                                         Talk to a Mentor First
                                     </Button>
@@ -332,6 +332,7 @@ export default function CompanyPackages() {
                         </div>
                     </div>
                 </section>
+
 
                 {/* Stats Section */}
                 <section className="py-12 bg-primary">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { fetchWithAuth } from "@/lib/api-client";
 import { useForm } from "react-hook-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
@@ -38,6 +38,7 @@ interface JobFormData {
 export default function PostJob() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isPaid, setIsPaid] = useState(false);
   const [isFlexible, setIsFlexible] = useState(false);
 
@@ -117,6 +118,7 @@ export default function PostJob() {
           description: "Your job has been published successfully.",
         });
       }
+      queryClient.invalidateQueries({ queryKey: ["/api/opportunities/my-jobs"] });
       navigate("/company/dashboard");
     },
     onError: (error: Error) => {
