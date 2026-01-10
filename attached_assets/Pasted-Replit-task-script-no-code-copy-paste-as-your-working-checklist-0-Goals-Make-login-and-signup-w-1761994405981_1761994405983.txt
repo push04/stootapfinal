@@ -1,0 +1,258 @@
+Replit task script (no code, copy-paste as your working checklist)
+0) Goals
+
+Make login and signup work on both the homepage and /admin/login.
+
+After successful login or registration, send the user to /profile.
+
+Keep Supabase creds inside the repo for Replit builds (you’ll keep the repo private).
+
+Remove current errors, harden the API/functions, and add polish + new features.
+
+1) Replit setup (store creds in the repo)
+
+Import your GitHub repo into Replit.
+
+In the Replit Files sidebar, inside client/ create two files:
+
+client/.env.development
+
+client/.env.production
+
+Put the following key–value pairs in both files (use your real values):
+
+VITE_PUBLIC_SUPABASE_URL = <your Supabase URL>
+
+VITE_PUBLIC_SUPABASE_ANON_KEY = <your Supabase anon key>
+
+Confirm Replit is set to track these files in Git (they’re intentionally kept in-repo).
+
+Add a visible note in the repo README warning that secrets are present and the repo must stay private. Plan to rotate keys if you ever make the repo public.
+
+2) Auth flow unification + redirects
+
+Make both the homepage login component and /admin/login use a single shared auth service (one function for sign-in, one for sign-up, one for sign-out, one for session refresh).
+
+On successful login from any page, redirect to /profile.
+
+On successful registration, redirect to /profile immediately after the auth provider returns a session (or after email verification if you require it).
+
+Add a global route guard:
+
+If a user is not authenticated, visiting any protected page redirects to the most appropriate entry page:
+
+/admin/* → /admin/login
+
+user-protected pages → homepage login
+
+If a user is already authenticated and lands on a login page, auto-redirect them to /profile.
+
+3) Admin access control
+
+Use role/claims to restrict /admin/*. If user lacks the admin role, redirect to /profile and show a “Not authorized” toast.
+
+Ensure the admin navbar/links are hidden for non-admins.
+
+4) UX and validation
+
+Replace vague “Login failed” messages with explicit states:
+
+Invalid email/password
+
+Email not verified
+
+Network error / rate-limited
+
+Unknown error (with a short reference ID)
+
+Add client validation on all auth forms (email format, password rules, non-empty, confirm password match).
+
+Add form states:
+
+Idle / Typing
+
+Submitting (button disabled, spinner)
+
+Success (quick feedback then redirect)
+
+Error (inline message + toast)
+
+Add “Remember me” checkbox to extend session persistence (still secure).
+
+Add “Resend verification email” and “Forgot password” flows from both login screens.
+
+5) Robustness & error handling
+
+Remove any “placeholder” fallbacks for missing Supabase env values—fail fast with a clear message if keys are absent.
+
+Wrap all fetches with a small retry policy (backoff) and show a helpful error on repeated failures.
+
+Introduce a global error boundary for React (user-friendly crash screen + soft reload action).
+
+Log meaningful errors from client and server (see “Observability” below).
+
+6) Netlify functions & API hardening
+
+Verify the functions build without ESM/CJS issues (we already removed the createRequire(import.meta.url) banner pattern in your build step—keep it that way).
+
+CORS: allow only your site origins; block *.
+
+Razorpay webhook:
+
+Validate signature before any state change.
+
+Return 2xx only on verified/processed events.
+
+Guard against retries storms (idempotency keys).
+
+Add lightweight rate-limiting per IP for the public functions (auth and webhook endpoints).
+
+Uniform JSON error format: status, code, message, traceId.
+
+7) Security essentials
+
+Enforce HTTPS redirects and secure cookies.
+
+Content Security Policy: default-src ‘self’; allow only required CDN domains.
+
+Turn off frame embedding where not needed.
+
+Sanitize all user-enterable strings shown back in UI.
+
+8) Quality improvements (quick wins)
+
+/profile page:
+
+Show basic user info (email, role).
+
+Actions: Sign out, Change password, Manage sessions (optional).
+
+Navigation:
+
+Hide/show menu items based on auth state and role.
+
+Add a profile avatar button that sends to /profile.
+
+Loading polish:
+
+Skeletons for critical sections.
+
+Route-level spinners only when needed.
+
+Performance:
+
+Split code for admin routes.
+
+Defer non-critical scripts.
+
+Compress large images and SVGs.
+
+9) Optional features (nice to have)
+
+Passwordless (email OTP or magic link) toggle in settings.
+
+Social sign-in providers (if desired).
+
+Dark mode toggle persisted to local storage.
+
+PWA basics (manifest + offline shell) if you want installability.
+
+Lightweight analytics (just page views and auth funnel).
+
+10) Testing & acceptance criteria
+
+Functional checks
+
+Homepage login:
+
+Valid credentials → redirect to /profile.
+
+Invalid credentials → error inline + toast; no redirect.
+
+Already authenticated → navigating to / shows homepage but login widget is replaced by “Continue to Profile” button or auto-redirect.
+
+/admin/login:
+
+Valid admin → admin home, no flicker.
+
+Valid non-admin → redirect to /profile with “Not authorized” message.
+
+Invalid credentials → error inline + toast; no redirect.
+
+Signup:
+
+Successful register → redirect to /profile (or verification flow if enabled).
+
+Logout:
+
+Clears session, returns to homepage; protected routes redirect to login.
+
+Resilience checks
+
+Disable network and attempt login → clear “network error” message, no crash.
+
+Expired session → silent refresh; on failure, redirect to login with toast.
+
+API function returns 500 → user sees friendly error, UI still usable.
+
+Security checks
+
+Confirm no authenticated API calls succeed when logged out.
+
+Confirm CSRF/Clickjacking protections are active.
+
+Confirm webhook rejects invalid signatures.
+
+11) Deploy flow (Netlify)
+
+Keep the repo private. Your Replit commit includes .env.development and .env.production so the build has keys.
+
+Build from Replit and deploy artifacts to Netlify (or connect the repo to Netlify for automatic builds).
+
+After deploy, test:
+
+Login from homepage and /admin/login both redirect to /profile on success.
+
+Admin access control behaves as specified.
+
+Webhook logs show signature validation working.
+
+12) Observability & ops
+
+Turn on Netlify function logs and scan for repeated errors.
+
+Add client-side error reporting (choose a lightweight service) to capture unexpected crashes.
+
+Keep a short runbook in the repo:
+
+“How to rotate Supabase keys”
+
+“How to disable an auth provider”
+
+“How to check webhook failures and replay safely”
+
+13) Definition of done
+
+Both login entry points work and redirect to /profile for authenticated users.
+
+Non-admin users can’t access /admin/*.
+
+No “Invalid API key” or build-time env errors remain.
+
+Clear, actionable errors for all common auth failures.
+
+Functions compile and run reliably; webhook validates signatures.
+
+Repo remains private and explicitly flagged as containing secrets.
+
+14) Risk note (storing secrets in repo)
+
+Keeping creds in the repo is acceptable only while the repo is private. If you ever want to make it public:
+
+Rotate the Supabase anon key.
+
+Replace values in .env.* with placeholders.
+
+Purge secret history (not just the latest commit).
+
+Move real keys to Netlify environment variables and rebuild.

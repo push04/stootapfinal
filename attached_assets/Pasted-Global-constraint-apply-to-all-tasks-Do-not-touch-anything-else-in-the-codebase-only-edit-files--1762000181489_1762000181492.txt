@@ -1,0 +1,75 @@
+Global constraint (apply to all tasks): Do not touch anything else in the codebase; only edit files explicitly mentioned in each task.
+Keep keys/credentials in-repo as-is (repo is private); do not rotate/move them; no CI/env var changes.
+
+
+Admin login → auto-dashboard redirect: after successful auth, if role=admin route to /admin/dashboard (else /profile).
+Support ?next=/admin/... deep links; on refresh, hold UI in “resolving access…” until role loads to avoid flicker.
+
+
+Persistent intended-route memory: when blocked on a protected admin URL, remember it and replay post-login.
+Clear this memory once landed successfully or if the user cancels.
+
+
+Dashboard shell & nav state: left nav reflects active section; show breadcrumbs & quick actions; persist collapse state.
+Hide admin-only items for non-admins (no tease, no 404s); never flash hidden items during session load.
+
+
+KPI cards + drill-downs: top-row cards (Revenue, Active Users, Conversions, Errors) with time-window selector.
+Clicking a card opens filtered detail views; support CSV export and “Copy link with filters”.
+
+
+Global filters & search: date range, owner/team, status; allow saving personal presets.
+Keep filters in URL for shareability; one-click “Reset to default”.
+
+
+Bulk actions with safety rails: multi-select → approve/reject/archive/reassign with confirm + undo toast.
+Long-running jobs show progress, are idempotent, and write audit entries.
+
+
+RBAC & action visibility: enforce permissions server-side; client hides/greys forbidden actions.
+Provide “Why disabled?” tooltip listing required role/permission.
+
+
+Audit trail & actor context: log who/what/when/where (IP/UA) + before/after deltas + reason.
+Add filterable audit view with export and backlinks to affected entities.
+
+
+Safe user impersonation: “View as” with loud banner, time limit, and auto-revert.
+Tag all impersonated actions; block high-risk actions while impersonating.
+
+
+Moderation queues & SLAs: triage inbox with priority, age, owner, status; keyboard shortcuts.
+SLA timers highlight aging items; support batch assignment and escalation.
+
+
+Notifications & inbox: in-app bell + optional email digests for assignments, failures, mentions.
+Per-user mute/snooze and digest schedule; link to source with preserved filters.
+
+
+Feature flags & experiments: gate new panels by role/tenant; enable flighting/A-B hooks tied to KPIs.
+One-click rollback; flags loaded before rendering to prevent flicker.
+
+
+Settings with guardrails: forms validate and preview changes; “Test connection” for external hooks.
+Dangerous saves require re-auth + reason; write audit entries.
+
+
+Performance & resilience: virtualized tables, incremental fetch, optimistic UI; cache hot queries.
+Any widget failure shows local error with retry; dashboard keeps running.
+
+
+Accessibility & keyboard: full keyboard nav, ARIA labels, high contrast, live regions for async updates.
+No focus traps; toasts are screen-reader friendly.
+
+
+Internationalization & locale: user-level time zone and number/date formats.
+All copy lives in a dictionary; test RTL for critical screens.
+
+
+Export/import workflows: scoped exports respect filters/roles; background jobs notify on ready.
+Imports show validation preview, partial-success report, and rollback option.
+
+
+Security nudges (repo stays private): show admin-only banner: “Repo contains secrets—private by policy.”
+Detect secret-looking values in settings forms and block accidental display; do not move or alter stored keys.
+

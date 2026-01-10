@@ -1,0 +1,294 @@
+Add a new “Opportunities & Company Listings” section on Stootap.com where companies can register, pay to list, post paid/unpaid internships and roles, and students/candidates can apply. Requirements, flows and copy are below — ready to hand to a developer/designer or to paste into a product ticket.
+
+Feature overview (one-sentence)
+Allow companies to create accounts, register their business, and post featured internship/paid roles; candidates can browse, choose a featured company, and apply with their CV and details. Companies pay a listing fee after a 2-month trial and the platform charges a small processing/feature fee for paid opportunities.
+
+Business rules & pricing (as requested)
+
+
+Trial/listing: New company listings are live for a 2-month trial (free).
+
+
+Post-trial subscription: After trial, company must pay ₹4,999 / year to keep the listing active and featured.
+
+
+Paid opportunity platform fee: For each paid role posted, Stootap charges ₹199 per job (covers 6 months visibility) as a platform processing/feature fee.
+
+
+Optional add-ons: Featured banner, priority placement, email blast, candidate shortlist — billed separately.
+
+
+
+User flows
+Company flow
+
+
+Company clicks “Company Login / Register.”
+
+
+Register form (basic + optional verification):
+
+
+Company name (required)
+
+
+Primary contact name & email (required)
+
+
+Company website
+
+
+Business type (dropdown: e-commerce, services, manufacturing, education, other)
+
+
+GSTIN (optional)
+
+
+Company registration documents (optional upload)
+
+
+Company description / logo
+
+
+Address, city, state
+
+
+Bank details or payout account (for salary/payment processing)
+
+
+Preferred contact number
+
+
+Password / 2FA
+
+
+
+
+Admin review (optional): Admin can verify optional documents, mark listing as “Verified.”
+
+
+Company posts roles (internship / experience / paid roles) with job details and selects listing options (free trial or paid featured).
+
+
+After 2 months the company receives automatic invoice/notification to subscribe at ₹4,999/year to remain listed/featured.
+
+
+Company dashboard: view applicants, shortlist, message candidates, upgrade listing, manage payments and reporting.
+
+
+Candidate flow
+
+
+Candidate browses Opportunities and filters by company, role type, paid/unpaid, location, flexible hours, experience level, college preference.
+
+
+On a role page the candidate can:
+
+
+Click Apply (upload CV, add cover note)
+
+
+Fill application fields: full name, email, phone, college name, expected stipend/salary, preferred working hours/days, available start date, CV, portfolio link, LinkedIn, account details (for salary) — only collected when necessary and with clear privacy notice
+
+
+Option to choose a Featured Company filter
+
+
+
+
+Candidate can track application status in their profile.
+
+
+
+Job posting fields (what companies must provide)
+
+
+Job title
+
+
+Job type: Internship / Part-time / Full-time / Contract / Remote / Onsite / Hybrid
+
+
+Paid / Unpaid — if paid, provide stipend/salary range and payment schedule
+
+
+Experience level (Freshers / 0–1 / 1–3 / 3+ years)
+
+
+Working days & hours (flexible? yes/no)
+
+
+Job location / work mode
+
+
+Job description & responsibilities
+
+
+Required skills & preferred qualifications
+
+
+Application deadline
+
+
+Number of openings
+
+
+Documents required from candidate (CV mandatory; others optional)
+
+
+Platform fee selection for paid postings (auto-applied: ₹199 / 6 months)
+
+
+
+Company dashboard & admin features
+
+
+Post, edit, renew jobs
+
+
+View candidate list, shortlist, reject, message
+
+
+Download CVs (PDF)
+
+
+Billing & invoices, payment history
+
+
+Auto reminders before the end of 2-month trial and before renewal
+
+
+Toggle visibility: Featured / Standard / Archived
+
+
+Verification badge if GSTIN/documents verified
+
+
+Candidate dashboard & features
+
+
+Apply & withdraw application
+
+
+Track status (Applied / Shortlisted / Interview / Offered / Rejected)
+
+
+Save favorite companies / jobs
+
+
+Upload / update CV and profile
+
+
+Notifications (email + site) for shortlisted roles
+
+
+
+Payment & billing
+
+
+Payment gateways: support card/UPI/netbanking (integrate Razorpay / Paytm / Stripe India or similar)
+
+
+Automatic invoice generation for ₹4,999/year after trial (with a 7-day grace reminder)
+
+
+For paid roles, the ₹199 platform fee charged at time of posting for 6 months visibility
+
+
+Refund/cancellation policy: define clear terms (example: non-refundable after posting; prorated refunds possible only for subscription cancellations within 7 days)
+
+
+
+UI copy (short snippets)
+
+
+Company register button: “Company Login / Register”
+
+
+Post job CTA (company): “Post a Role — Start 2-Month Free Trial”
+
+
+Candidate apply CTA: “Apply with CV”
+
+
+Subscription prompt: “Your 2-month free listing ends on [date]. Continue featuring your company for ₹4,999/year.”
+
+
+Paid role label: “Paid opportunity — Platform fee ₹199 (6 months)”
+
+
+
+Privacy & compliance notes
+
+
+Collect only what’s necessary. Mark GSTIN and registration docs as optional.
+
+
+Store bank/salary account info securely; comply with PCI/DSS where applicable.
+
+
+Candidate consent checkbox before sharing bank/account details with employer.
+
+
+GDPR/IT rules: provide data deletion & export on request.
+
+
+
+Email templates (short)
+
+
+Trial ending reminder: “Hi [Company], your 2-month free listing for Stootap ends on [date]. Renew for ₹4,999/year to remain featured.”
+
+
+New applicant notification: “You have [N] new applicant(s) for [Job Title].”
+
+
+Application confirmation to candidate: “Thanks for applying to [Company] — we’ll update you on the status.”
+
+
+
+Admin & moderation
+
+
+Admin can disable suspicious listings, review optional verification docs, and manually flag refund requests.
+
+
+Metrics for admin: number of active companies, active jobs, paid vs unpaid roles, revenue.
+
+
+
+Acceptance criteria (dev ready)
+
+
+Company can register & login.
+
+
+Company can post roles and a 2-month free listing is tracked automatically.
+
+
+After 2 months, the company is prompted to pay ₹4,999/year to remain featured.
+
+
+Paid job posting collects and charges ₹199 for a 6-month visibility period.
+
+
+Candidates can apply with CV and required fields and track status.
+
+
+Dashboards for company, candidate, and admin with the features above.
+
+
+
+If you want, I can:
+
+
+Convert this into a single product ticket or Trello card with subtasks.
+
+
+Write the exact HTML copy for the company registration & job posting forms.
+
+
+Draft the email templates in full.
+
+
+Which one should I prepare next?

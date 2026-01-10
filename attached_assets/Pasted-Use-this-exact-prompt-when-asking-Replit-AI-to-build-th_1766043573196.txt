@@ -1,0 +1,288 @@
+Use this exact prompt when asking Replit AI to build the feature. It’s written to be copy-pasted — complete, explicit, and developer-friendly while still readable by a non-technical product person. I reviewed Stootap’s site and its services pages to match UI tone and scope. 
+Stootap
++1
+
+SHORT INSTRUCTION (one line you can paste first)
+
+Build a polished “Opportunities & Company Listings” section on Stootap.com where companies can register/login, post internships & paid roles, run a 2-month free listing that converts to a ₹4,999/year featured subscription, and where candidates can view companies, apply with CVs, and track applications. Paid job posts require a ₹199 platform fee for 6 months visibility.
+
+CONTEXT & DESIGN PRINCIPLES
+
+Keep UI consistent with Stootap’s current look and tone (simple, professional, business-oriented). 
+Stootap
+
+Prioritize usability: short forms, clear labels, clear next steps for both companies and applicants.
+
+Make optional fields truly optional (GSTIN, registration docs). Only collect sensitive info (bank details) with explicit consent.
+
+Build for India-first payments and rules (₹ amounts); design flows so integrations (Razorpay/Stripe) can be plugged in later.
+
+PRIMARY GOALS (what success looks like)
+
+Companies can register, login, and manage a company profile.
+
+Companies can post internships, experience roles, part-time/full-time, and paid roles.
+
+Company listings are active for a 2-month free trial, then require ₹4,999/year to remain featured.
+
+Paid roles automatically require a ₹199 platform fee at posting time for 6 months visibility.
+
+Candidates can browse companies, select featured companies, apply with CV and profile data, and track application status.
+
+Admin can moderate listings, verify companies, view payments, and remove suspicious listings.
+
+HIGH-LEVEL USER TYPES
+
+Company Admin — registers company, posts roles, views applicants, pays to renew/feature.
+
+Candidate / Student — browses jobs, applies with CV, tracks status.
+
+Site Admin — verifies companies, views revenue, disables listings, resolves disputes.
+
+DETAILED FEATURES & FLOWS
+1) Company registration & profile (what to show & collect)
+
+Fields (required/optional):
+
+Company name required
+
+Primary contact name required
+
+Contact email required
+
+Phone number optional
+
+Password (create) required
+
+Business type dropdown (e-commerce / services / manufacturing / education / other) required
+
+Website URL optional
+
+GSTIN optional
+
+Upload registration documents (pdf/png) optional
+
+Short company description optional
+
+Address (city, state) optional
+
+Bank or payout details optional — collect only if company expects salary payouts and only after explicit consent
+
+“I agree to platform terms” checkbox required
+
+Flow:
+
+Company signs up → receives confirmation email.
+
+After first job post, the company’s listing becomes active and trial start date is recorded (trial = 60 days).
+
+A company dashboard shows trial countdown and renewal CTA.
+
+2) Job posting (fields + behavior)
+
+Every role should support:
+
+Job title required
+
+Role type: Internship / Part-time / Full-time / Contract required
+
+Paid: toggle (Yes/No) — if Yes, show stipend/salary field and note about ₹199 platform fee. required
+
+Salary/stipend (range) optional but recommended
+
+Experience level (Freshers / 0–1 / 1–3 / 3+ years) required
+
+Location: Remote / Onsite / Hybrid + city required
+
+Working days & hours / flexible? required
+
+Job description & responsibilities required
+
+Required skills (tags) optional
+
+Preferred college or eligibility notes optional
+
+Number of openings optional
+
+Application deadline optional
+
+Documents required from candidate (CV mandatory by default; others optional)
+
+Visibility: Featured (requires company trial/paid listing) or Standard (free) — if company is within 2-month trial, featured is allowed during trial; after trial, featured requires ₹4,999/year renewal.
+
+Behavior rules:
+
+If Paid = Yes: collect platform fee ₹199 at posting time (6 months featured visibility for that job). Display a clear badge “Paid opportunity — ₹199 charged for 6 months visibility”.
+
+Company can edit/close job; editing does not reset paid visibility unless posting becomes paid again.
+
+3) Candidate apply flow (form & data)
+
+Candidate minimal form:
+
+Full name required
+
+Email required
+
+Phone required
+
+College name (if student) optional but requested
+
+Experience summary (text) optional
+
+Preferred working hours/days optional
+
+Available start date optional
+
+CV upload required (PDF preferred)
+
+Cover note optional
+
+Bank/account details optional — only requested when the job is paid and salary payout info is necessary, and must include a consent checkbox: “I consent to share account details with employer for salary purpose”.
+
+Checkbox: consent to platform privacy policy & data sharing required
+
+After submission:
+
+Show confirmation page: “Application received — company will contact if shortlisted.”
+
+Send email to candidate and notification to company with the attached CV link.
+
+4) Company dashboard (must-haves)
+
+Overview: trial status, listing status (Featured / Standard), renew CTA.
+
+Jobs: list of posted roles with status (active, closed), applicants count, quick actions (view applicants, message, shortlist, download CVs).
+
+Applicants page: view applicant profile, CV download, shortlist/reject, message candidate (simple message + history).
+
+Billing: invoices (₹199 job fees + ₹4,999 subscription), payment status, renew now button.
+
+Verification: upload/see verification docs status.
+
+5) Candidate dashboard (must-haves)
+
+My applications: list with status (Applied / Shortlisted / Interview / Offered / Rejected).
+
+Saved jobs / saved companies.
+
+Profile: update CV, contact details, college, experience.
+
+Notifications.
+
+6) Admin panel (must-haves)
+
+View all companies, jobs, payments.
+
+Verify company (toggle verification badge).
+
+Disable/flag job or company.
+
+Refund requests handling (manual).
+
+Reports: number of active companies, paid jobs, revenue from fees.
+
+PRICING & PAYMENT RULES (exact)
+
+Company featured subscription: ₹4,999 per year. Trigger: after 60 days free listing. If unpaid after 7-day grace, company loses featured status (downgraded to Standard).
+
+Paid job platform fee: ₹199 charged at time of posting of a job marked Paid; this grants that job 6 months of visibility/featured status.
+
+Payment failure flow: allow retry, email reminders at 14d / 7d / 1d before trial expiry; lock featured-only actions if subscription unpaid.
+
+EMAIL & ALERT TIMING (exact)
+
+On company sign-up: immediate welcome email.
+
+On first job post: immediate confirmation + trial started notice with trial_end_date.
+
+Trial reminders: 14 days before expiry, 7 days before expiry, 1 day before expiry.
+
+On payment success: immediate invoice + “listing active” confirmation.
+
+On paid job post: immediate confirmation email showing ₹199 charged.
+
+On candidate apply: confirmation to candidate + notification to company.
+
+Admin alert: flag suspicious uploads (large files, not matching formats).
+
+Sample short email copy (paste-ready)
+
+Trial ending reminder subject: “Stootap — Your 2-month free listing ends on [date]”
+
+Body (first line): “Hi [Company name], your free listing ends on [date]. Renew for ₹4,999/year to stay featured.”
+
+Job posted (paid) subject: “Paid job live — ₹199 charged”
+
+Application received subject: “Application received for [Job Title] at [Company]”
+
+PRIVACY & SAFETY (must implement in product behavior)
+
+Make GSTIN and registration docs optional. Do not require them to post jobs.
+
+Collect bank details only with explicit consent and for legitimate paid roles. Store such details securely. (Flag in UI that bank details are optional and used only for payroll.)
+
+CV downloads should be logged (who downloaded what and when).
+
+Provide candidate ability to remove their data (GDPR/IT rules style), or request export/delete.
+
+Warn and block obvious malware uploads (max file size and allowed extensions).
+
+ACCEPTANCE CRITERIA — TESTABLE ITEMS
+
+Company registers; after first job post, trial_end_date = posted_date + 60 days.
+
+System sends trial reminder emails at 14d, 7d, 1d before trial_end_date.
+
+If company posts a paid job, platform fee ₹199 is charged at posting and job gets 6 months “featured_until”.
+
+After trial expires and ₹4,999/year not paid after 7-day grace, company loses featured privileges.
+
+Candidate submits application, company receives notification and can download CV.
+
+Admin can verify or disable company; when disabled, company jobs are hidden in public listings.
+
+EDGE CASES & QA SCENARIOS (include these tests)
+
+Company edits job to toggle Paid → ensure additional ₹199 charge applied only if toggled to Paid and not already paid for the job.
+
+Company deletes job that had a paid ₹199 — decide and document refund policy (recommended: non-refundable after job goes live).
+
+Candidate withdraws application → company notified.
+
+Company posts many jobs during trial → trial still counts only from first job post.
+
+Company attempts to post Featured role after trial expired → show renew now message and block featured selection.
+
+DELIVERY (what to hand over)
+
+Ask Replit AI to deliver:
+
+A clickable design prototype or clean UI mockups for: company register, company dashboard, job posting form, job listing page, job detail + apply modal, candidate dashboard, admin panel.
+
+A list of exact form fields and data validation rules (no code required if you want non-technical).
+
+An implementation plan (stepwise) or a single package ready to hand to your dev team: includes copy for UI, email templates, sample test cases above, and acceptance criteria.
+
+A short README with how to test flows manually (trial expiry, paid job posting, apply flow).
+
+UI & COPY GUIDELINES (tone + microcopy)
+
+Use short CTA buttons: “Post a Role”, “Apply with CV”, “Renew Listing”, “Feature this Job”.
+
+Labels: Mark optional fields with “(optional)”.
+
+Show money clearly: e.g., “Listing renewal: ₹4,999 / year” and “Paid job platform fee: ₹199 (6 months visibility)”.
+
+Feature badges: “Featured”, “Paid opportunity”, “Flexible hours”, “Remote”.
+
+SAMPLE DATA (copy-paste for QA)
+
+Company: “Acme EdTech” — Business type: education — GSTIN: (leave blank).
+Job (paid): “Frontend Intern” — Paid: Yes — Salary: “₹8,000–12,000” — Posted today → expect ₹199 charge, job visible & shows “Featured until [date + 6 months]”.
+Candidate: “Asha Kumar”, email, phone, CV uploaded → apply to job → company receives notification.
+
+EXACT PROMPT BLOCK (copy & paste this last)
+
+Build a full Opportunities & Company Listings module for Stootap.com that includes: company registration/login with optional GSTIN/docs and a 2-month free listing trial; job posting (internship, paid/unpaid, flexible hours); paid job platform fee ₹199 for 6 months visibility (charged at posting); company featured subscription ₹4,999/year after trial; candidate apply flow with CV upload and optional bank details (with consent); company & candidate dashboards; admin moderation tools; email reminders and invoice notifications; and strict privacy behavior (optional docs, secure handling of bank details).
+Provide UI copy, email templates, acceptance criteria, QA test cases, and sample data so the feature can be implemented or handed to a developer. Keep the UI consistent with Stootap’s existing style and tone.

@@ -1,0 +1,25 @@
+﻿node.exe : API error: {
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (A  
+  PI error: {:String) [   
+ ], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'new row 
+violates row-level 
+security policy for table 
+"profiles"'
+}

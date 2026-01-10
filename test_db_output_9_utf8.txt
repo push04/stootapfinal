@@ -1,0 +1,73 @@
+﻿Testing database connection...
+node.exe : (node:24488) 
+Warning: Setting the NODE_
+TLS_REJECT_UNAUTHORIZED 
+environment variable to 
+'0' makes TLS connections 
+and HTTPS requests 
+insecure by disabling 
+certificate verification.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: ((  
+  node:24488) Wa...e ve   
+ rification.:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+(Use `node 
+--trace-warnings ...` to 
+show where the warning 
+was created)
+Connection failed: 
+PostgresError: password 
+authentication failed for 
+user "postgres"
+    at ErrorResponse (file
+:///C:/Users/pushp/Downloa
+ds/stootapfinal%20(28)/sto
+otapfinal/node_modules/pos
+tgres/src/connection.js:79
+4:26)
+    at handle (file:///C:/
+Users/pushp/Downloads/stoo
+tapfinal%20(28)/stootapfin
+al/node_modules/postgres/s
+rc/connection.js:480:6)
+    at TLSSocket.data (fil
+e:///C:/Users/pushp/Downlo
+ads/stootapfinal%20(28)/st
+ootapfinal/node_modules/po
+stgres/src/connection.js:3
+15:9)
+    at TLSSocket.emit 
+(node:events:518:28)
+    at addChunk (node:inte
+rnal/streams/readable:561:
+12)
+    at readableAddChunkPus
+hByteMode (node:internal/s
+treams/readable:512:3)
+    at Readable.push (node
+:internal/streams/readable
+:392:5)
+    at 
+TLSWrap.onStreamRead (node
+:internal/stream_base_comm
+ons:189:23) {
+  severity_local: 'FATAL',
+  severity: 'FATAL',
+  code: '28P01',
+  file: 'auth.c',
+  line: '329',
+  routine: 'auth_failed'
+}

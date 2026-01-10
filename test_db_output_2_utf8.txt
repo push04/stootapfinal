@@ -1,0 +1,89 @@
+﻿node.exe : 
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (:String   
+ ) [], RemoteExce    
+ption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+node:internal/modules
+/run_main:123
+    triggerUncaughtEx
+ception(
+    ^
+Error [ERR_MODULE_NOT
+_FOUND]: Cannot find 
+package 'dotenv' 
+imported from C:\User
+s\pushp\Downloads\sto
+otapfinal (28)\stoota
+pfinal\test-db.ts
+    at Object.getPack
+ageJSONURL (node:inte
+rnal/modules/package_
+json_reader:255:9)
+    at 
+packageResolve (node:
+internal/modules/esm/
+resolve:767:81)
+    at moduleResolve 
+(node:internal/module
+s/esm/resolve:853:18)
+    at 
+defaultResolve (node:
+internal/modules/esm/
+resolve:983:11)
+    at nextResolve (n
+ode:internal/modules/
+esm/hooks:748:28)
+    at resolveBase (f
+ile:///C:/Users/pushp
+/Downloads/stootapfin
+al%20(28)/stootapfina
+l/node_modules/tsx/di
+st/esm/index.mjs?1766
+140665393:2:3744)
+    at 
+resolveDirectory (fil
+e:///C:/Users/pushp/D
+ownloads/stootapfinal
+%20(28)/stootapfinal/
+node_modules/tsx/dist
+/esm/index.mjs?176614
+0665393:2:4243)
+    at 
+resolveTsPaths (file:
+///C:/Users/pushp/Dow
+nloads/stootapfinal%2
+0(28)/stootapfinal/no
+de_modules/tsx/dist/e
+sm/index.mjs?17661406
+65393:2:4984)
+    at async resolve 
+(file:///C:/Users/pus
+hp/Downloads/stootapf
+inal%20(28)/stootapfi
+nal/node_modules/tsx/
+dist/esm/index.mjs?17
+66140665393:2:5355)
+    at async 
+nextResolve (node:int
+ernal/modules/esm/hoo
+ks:748:22) {
+  code: 'ERR_MODULE_N
+OT_FOUND'
+}
+
+Node.js v22.18.0

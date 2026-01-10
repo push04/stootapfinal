@@ -1,0 +1,10 @@
+{
+  "name": "PostgresError",
+  "severity_local": "ERROR",
+  "severity": "ERROR",
+  "code": "42P01",
+  "position": "71",
+  "file": "parse_relation.c",
+  "line": "1449",
+  "routine": "parserOpenTable"
+}

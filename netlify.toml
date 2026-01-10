@@ -1,0 +1,74 @@
+[build]
+  # Build command runs both client and functions build
+  command = "npm install --legacy-peer-deps --include=dev && npm run build"
+  # Publish directory contains the built Vite frontend
+  publish = "dist/public"
+  # Functions directory contains the built serverless functions
+  functions = "netlify-functions-build"
+
+# Environment variables (set these in Netlify UI)
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_VERSION = "10"
+
+# Redirects - Map /api/* to the main API function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback - serve index.html for all non-API routes
+# This must be last to allow API redirects to take precedence
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security headers for all pages
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+# Cache control for static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache control for index.html (no cache)
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Disable caching for API responses
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, proxy-revalidate"
+
+# Function settings
+[functions]
+  # Set the directory where built functions will be output
+  directory = "netlify-functions-build"
+  # Node runtime version
+  node_bundler = "esbuild"
+  # Include necessary files in the function bundle
+  included_files = ["shared/**/*"]

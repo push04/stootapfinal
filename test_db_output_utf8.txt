@@ -1,0 +1,65 @@
+﻿node.exe : C:\Users\p
+ushp\Downloads\stoota
+pfinal (28)\stootapfi
+nal\server\db.ts:19
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (C:\User   
+ s\pushp\...serve    
+r\db.ts:19:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+    throw new 
+Error("Either 
+DATABASE_URL or 
+SUPABASE_URL + 
+SUPABASE_DB_PASSWORD 
+must be provided");
+          ^
+
+
+Error: Either 
+DATABASE_URL or 
+SUPABASE_URL + 
+SUPABASE_DB_PASSWORD 
+must be provided
+    at 
+getConnectionString (
+C:\Users\pushp\Downlo
+ads\stootapfinal (28)
+\stootapfinal\server\
+db.ts:19:11)
+    at <anonymous> (C
+:\Users\pushp\Downloa
+ds\stootapfinal (28)\
+stootapfinal\server\d
+b.ts:31:26)
+    at ModuleJob.run 
+(node:internal/module
+s/esm/module_job:343:
+25)
+    at async onImport
+.tracePromise.__proto
+__ (node:internal/mod
+ules/esm/loader:647:2
+6)
+    at async asyncRun
+EntryPointWithESMLoad
+er (node:internal/mod
+ules/run_main:117:5)
+
+Node.js v22.18.0

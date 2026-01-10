@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#gradient)"/>
+  <!-- Clean S letter design -->
+  <path d="M340 165c0-45-40-75-95-75-60 0-105 35-105 85 0 45 30 65 85 80l30 8c35 9 50 22 50 45 0 30-30 52-75 52-50 0-80-25-85-60h-45c5 55 55 100 130 100 70 0 120-40 120-95 0-50-35-72-95-87l-30-8c-30-8-45-18-45-40 0-25 25-45 65-45 40 0 65 20 70 50h45z" fill="white"/>
+</svg>

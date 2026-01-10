@@ -1,0 +1,181 @@
+1) Repo & env setup (store creds in-repo)
+
+
+In client/.env.development and client/.env.production, set VITE_PUBLIC_SUPABASE_URL and VITE_PUBLIC_SUPABASE_ANON_KEY.
+
+
+Keep the repo private. Add a README note that secrets exist; rotate keys before ever making the repo public.
+
+
+2) Unify auth & redirects
+
+
+One shared auth service used by homepage login and /admin/login for login/sign-up/logout/session refresh.
+
+
+On successful login or register → redirect to /profile.
+
+
+If an authenticated user hits any login page, auto-redirect to /profile.
+
+
+3) Admin access control
+
+
+Guard /admin/* by role/claims. Non-admin → redirect to /profile with “Not authorized” toast.
+
+
+Hide admin nav/CTA when the user isn’t an admin.
+
+
+Server/function endpoints also verify role (not just client routing).
+
+
+4) Forms & UX
+
+
+Clear, specific errors (invalid creds / not verified / network / rate-limited).
+
+
+Proper states: idle → typing → submitting (disabled button/spinner) → success → error.
+
+
+Client validation (email format, strong password, confirm match).
+
+
+“Remember me”, “Forgot password”, “Resend verification”.
+
+
+Nice touches: password strength meter; show/hide password; keyboard-friendly focus order.
+
+
+5) Session management
+
+
+Persist session; silent token refresh; single sign-out across tabs.
+
+
+If refresh fails or 401 loop, force logout + message.
+
+
+6) API & Netlify functions hardening
+
+
+Keep functions build stable (no ESM/CJS crashes).
+
+
+Strict CORS allowlist (only your domains).
+
+
+Consistent JSON error shape {status, code, message, traceId}.
+
+
+Rate-limit public endpoints.
+
+
+Razorpay webhook: signature verification + idempotency; return 2xx only on verified success; safe logging.
+
+
+7) Security hygiene
+
+
+HTTPS-only; secure, httpOnly cookies.
+
+
+Content-Security-Policy, X-Frame-Options/frameguard, X-Content-Type-Options nosniff.
+
+
+Sanitize any user content before display; avoid leaking PII in logs.
+
+
+8) Performance & build polish
+
+
+Code-split/lazy-load admin routes.
+
+
+Compress/optimize images; cache headers; prefetch critical assets.
+
+
+Defer non-critical scripts; avoid render-blocking CSS.
+
+
+9) /profile page (post-login landing)
+
+
+Show email, role, and basic profile.
+
+
+Actions: Sign out, change password, manage active sessions (optional).
+
+
+Link to upgrade/admin if authorized.
+
+
+10) Observability
+
+
+Turn on Netlify Functions logs with filters; capture client errors (lightweight reporter).
+
+
+Include a short runbook: rotate Supabase keys, replay webhook safely, common fixes.
+
+
+11) Testing (must pass)
+
+
+Unit: auth service, route guards, API client.
+
+
+E2E:
+
+
+Login success → /profile.
+
+
+Register success → /profile.
+
+
+Invalid creds → inline error, no redirect.
+
+
+Non-admin visiting /admin/* → /profile + toast.
+
+
+Expired tokens → silent refresh; on failure, logout with message.
+
+
+Network down → friendly error, no crash.
+
+
+
+
+12) Deploy checklist
+
+
+Build in Replit using the repo env files; deploy to Netlify.
+
+
+Verify: both login entry points, /profile redirect, admin guard, webhook success path, no “Invalid API key” toasts.
+
+
+Optional: link repo to Netlify for CI; keep repo private (or rotate keys before public).
+
+
+13) Definition of Done
+
+
+Both login and signup redirect to /profile.
+
+
+Admin routes blocked for non-admins (client + server).
+
+
+No key/config build errors; functions stable; CORS strict.
+
+
+Clear UX, accessible forms, robust error handling.
+
+
+Tests pass; logs clean of repeated failures; runbook present.
+

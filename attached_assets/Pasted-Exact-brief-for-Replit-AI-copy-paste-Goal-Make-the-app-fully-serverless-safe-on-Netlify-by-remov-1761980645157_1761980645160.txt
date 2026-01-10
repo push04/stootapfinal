@@ -1,0 +1,219 @@
+Exact brief for Replit AI (copy-paste)
+
+Goal: Make the app fully serverless-safe on Netlify by removing all DB sockets/pooling. Do not use Supabase/Neon pooler. Use Supabase URL + API keys only (REST) everywhere. Also implement these UX rules:
+
+After login/register → auto-redirect to /profile.
+
+/profile is protected; non-logged-in users should be asked to login/register and redirected.
+
+Ensure every page and admin panel work on Netlify.
+
+1) Replace DB access with Supabase REST (no Postgres clients)
+
+Delete/retire code that builds/uses a Postgres connection string (e.g., the getConnectionString and Neon Pool in server/app.ts) and anything that relies on DATABASE_URL or the pooler string built from SUPABASE_URL + SUPABASE_DB_PASSWORD 
+
+app
+
+.
+
+Remove Drizzle + Neon usage from the request path (e.g., server/storage-db.ts methods like getAllServices, createOrder, etc., which currently use SQL via db) and re-implement them using @supabase/supabase-js with the Supabase REST API. Preserve the return shapes expected by routes like /api/services, /api/categories, /api/orders, etc. (see how routes read from storage) 
+
+storage-db
+
+ 
+
+routes
+
+ 
+
+routes
+
+.
+
+Server-side, instantiate Supabase with SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (needed to bypass RLS for admin/protected actions). On the client, use NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY.
+
+Keep all route URLs exactly the same so the frontend keeps working: /api/services, /api/categories, /api/cart, /api/orders, /api/admin/, /api/site-content/, /api/ai/concierge, etc. (See server/routes.ts for the complete list) 
+
+routes
+
+ 
+
+routes
+
+ 
+
+routes
+
+.
+
+2) Replace session-based admin auth with stateless signed cookies
+
+Remove connect-pg-simple and the Neon Pool used for the session store in server/app.ts 
+
+app
+
+.
+
+Implement admin auth as a stateless signed cookie (JWT/iron-session/cookie-session) using SESSION_SECRET.
+
+/api/admin/login: verify credentials against ADMIN_USERNAME + ADMIN_PASSWORD_HASH (same logic as now), then set a signed cookie; no DB needed (see existing admin verify helper) 
+
+auth
+
+ 
+
+auth
+
+.
+
+/api/admin/check: read the cookie to decide isAdmin, mirroring the current semantics (it currently checks req.session?.adminId) 
+
+routes
+
+.
+
+/api/admin/logout: clear the cookie.
+
+Remove any session table requirements.
+
+3) Auth flows for end users + Profile routing/guard
+
+Implement Supabase Auth (email/password) on the client with @supabase/supabase-js.
+
+After successful login or register, navigate to /profile.
+
+Protect /profile: on mount, check the client’s Supabase auth session. If no session, toast “Please login or register first” and redirect to /login. The profile page is currently mock-data only (see local state) — replace with data pulled from Supabase profiles table, keeping existing UI intact 
+
+Profile
+
+.
+
+4) Fix “Failed to load services” on Netlify
+
+After step (1), /api/categories and /api/services should read via Supabase REST (no SQL sockets), so they’ll work in Netlify Functions. The Services page fetches those two endpoints (React Query) — keep the same URLs and signatures so the UI recovers 
+
+Services
+
+.
+
+5) Netlify config — SPA fallback + envs
+
+Add SPA fallback in netlify.toml so client routes load on refresh/deep link. Keep the existing /api/* and /api/payment/webhook redirects untouched 
+
+netlify
+
+.
+
+Add: [[redirects]] from = "/*" to = "/index.html" status = 200
+
+Ensure these envs are set in Netlify UI:
+
+NEXT_PUBLIC_SUPABASE_URL = your URL
+
+NEXT_PUBLIC_SUPABASE_ANON_KEY = your anon key
+
+SUPABASE_SERVICE_ROLE_KEY = service role key (server-only)
+
+SESSION_SECRET = strong random string
+
+Optional: OPENROUTER_API_KEY (AI concierge), RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET (payments)
+
+6) Keep everything else intact
+
+Do not change client routes or visual design.
+
+Preserve all /api/* endpoints and their response shapes so pages like Admin Dashboard, Orders, Tickets, Notifications, Site Content continue to function; only their storage layer changes from SQL to Supabase REST (see routes coverage) 
+
+routes
+
+ 
+
+routes
+
+ 
+
+routes
+
+.
+
+7) Test checklist (must pass on Netlify)
+
+Public: /, /services (list shows; filtering works), /services/:slug, /contact (lead submit OK), cart add/update/remove, checkout creates draft order (if enabled). Services page previously failing should now load correctly.
+
+Auth: Register → redirect to /profile; Login → redirect to /profile; visiting /profile logged-out redirects to /login with “Please login/register first”.
+
+Admin: /admin/login accepts creds; /admin loads analytics/orders/leads/services (these routes call many admin APIs) 
+
+AdminDashboard
+
+ 
+
+AdminDashboard
+
+ 
+
+AdminDashboard
+
+ 
+
+AdminDashboard
+
+.
+
+Webhooks/AI (optional): /api/payment/razorpay-key returns key if set; /api/ai/concierge returns a message if OPENROUTER_API_KEY is configured (it 500s otherwise — expected) 
+
+routes
+
+ 
+
+routes
+
+.
+
+Deep links: visiting /services or /profile directly loads (SPA fallback works).
+
+Your specific credentials (how to set them)
+
+Use these in Netlify (client):
+NEXT_PUBLIC_SUPABASE_URL = https://mwtzmkqgflwovdopmwgo.supabase.co (your URL)
+NEXT_PUBLIC_SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (your anon key)
+
+Use these in Netlify (server only):
+SUPABASE_SERVICE_ROLE_KEY = <service-role-key> (get from Supabase; do not expose in client)
+SESSION_SECRET = <long random string>
+
+Note: We are not using any DATABASE_URL or Supabase pooler URLs in this plan per your instruction. All data access goes through Supabase REST with URL + API keys.
+
+Quick sanity list of current code expectations (so Replit AI knows what to keep)
+
+Express app is booted once by the Netlify api function and routes everything under /api/* through it (keep this shape) 
+
+api
+
+ 
+
+netlify
+
+.
+
+Admin routes and public routes are already well-factored in server/routes.ts; only the persistence calls need to swap from storage-db.ts SQL to Supabase client calls (same return contracts) 
+
+routes
+
+ 
+
+routes
+
+.
+
+Services page depends on /api/categories + /api/services; it shows the exact red “Failed to load services” message when either errors — this should disappear once those endpoints run without a DB socket 
+
+Services
+
+.
+
+Admin login UI posts to /api/admin/login and expects a session/cookie; after stateless auth, keep the same endpoint behavior (200→redirect to /admin) 
+
+AdminLogin
+
+.

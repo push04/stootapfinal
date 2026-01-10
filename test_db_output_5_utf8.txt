@@ -1,0 +1,293 @@
+﻿Testing database connection...
+node.exe : 
+(node:14236) 
+Warning: Setting the 
+NODE_TLS_REJECT_UNAUT
+HORIZED environment 
+variable to '0' 
+makes TLS 
+connections and 
+HTTPS requests 
+insecure by 
+disabling 
+certificate 
+verification.
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: ((node:1   
+ 4236) Wa...e ver    
+ification.:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+(Use `node 
+--trace-warnings 
+...` to show where 
+the warning was 
+created)
+Connection failed: 
+ErrorEvent {
+  [Symbol(kTarget)]: 
+WebSocket {
+    _events: 
+[Object: null 
+prototype] {
+      error: 
+[Function],
+      message: 
+[Function],
+      close: 
+[Function],
+      open: 
+[Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: 
+undefined,
+    _binaryType: 
+'arraybuffer',
+    _closeCode: 1006,
+    
+_closeFrameReceived: 
+false,
+    _closeFrameSent: 
+false,
+    _closeMessage: 
+<Buffer >,
+    _closeTimer: 
+null,
+    _errorEmitted: 
+true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 
+0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://db.m
+wtzmkqgflwovdopmwgo.s
+upabase.co/v2',
+    _req: 
+ClientRequest {
+      _events: 
+[Object: null 
+prototype],
+      _eventsCount: 
+4,
+      _maxListeners: 
+undefined,
+      outputData: [],
+      outputSize: 0,
+      writable: true,
+      destroyed: 
+true,
+      _last: true,
+      
+chunkedEncoding: 
+false,
+      
+shouldKeepAlive: 
+false,
+      maxRequestsOnCo
+nnectionReached: 
+false,
+      
+_defaultKeepAlive: 
+true,
+      useChunkedEncod
+ingByDefault: false,
+      sendDate: 
+false,
+      
+_removedConnection: 
+false,
+      
+_removedContLen: 
+false,
+      _removedTE: 
+false,
+      
+strictContentLength: 
+false,
+      
+_contentLength: 0,
+      _hasBody: true,
+      _trailer: '',
+      finished: true,
+      _headerSent: 
+true,
+      _closed: false,
+      _header: 'GET 
+/v2 HTTP/1.1\r\n' +
+        'Sec-WebSocke
+t-Version: 13\r\n' +
+        
+'Sec-WebSocket-Key: T
+ZSVpR4dboEY+UcAzlndSw
+==\r\n' +
+        'Connection: 
+Upgrade\r\n' +
+        'Upgrade: 
+websocket\r\n' +
+        'Sec-WebSocke
+t-Extensions: 
+permessage-deflate; c
+lient_max_window_bits
+\r\n' +
+        'Host: db.mwt
+zmkqgflwovdopmwgo.sup
+abase.co\r\n' +
+        '\r\n',
+      
+_keepAliveTimeout: 0,
+      
+_onPendingData: 
+[Function: nop],
+      agent: 
+undefined,
+      socketPath: 
+undefined,
+      method: 'GET',
+      maxHeaderSize: 
+undefined,
+      
+insecureHTTPParser: 
+undefined,
+      joinDuplicateHe
+aders: undefined,
+      path: '/v2',
+      _ended: true,
+      res: 
+[IncomingMessage],
+      aborted: true,
+      timeoutCb: 
+null,
+      
+upgradeOrConnect: 
+false,
+      parser: null,
+      
+maxHeadersCount: 
+null,
+      reusedSocket: 
+false,
+      host: 'db.mwtzm
+kqgflwovdopmwgo.supab
+ase.co',
+      protocol: 
+'https:',
+      
+[Symbol(shapeMode)]: 
+false,
+      
+[Symbol(kCapture)]: 
+false,
+      [Symbol(kBytesW
+ritten)]: 0,
+      [Symbol(kNeedDr
+ain)]: false,
+      
+[Symbol(corked)]: 0,
+      [Symbol(kChunke
+dBuffer)]: [],
+      [Symbol(kChunke
+dLength)]: 0,
+      
+[Symbol(kSocket)]: 
+[TLSSocket],
+      [Symbol(kOutHea
+ders)]: [Object: 
+null prototype],
+      
+[Symbol(errored)]: 
+null,
+      [Symbol(kHighWa
+terMark)]: 16384,
+      [Symbol(kReject
+NonStandardBodyWrites
+)]: false,
+      [Symbol(kUnique
+Headers)]: null,
+      
+[Symbol(kAborted)]: 
+true,
+      
+[Symbol(kError)]: 
+undefined
+    },
+    
+[Symbol(shapeMode)]: 
+false,
+    
+[Symbol(kCapture)]: 
+false
+  },
+  [Symbol(kType)]: 
+'error',
+  [Symbol(kError)]: 
+Error: Unexpected 
+server response: 401
+      at ClientReques
+t.<anonymous> (C:\Use
+rs\pushp\Downloads\st
+ootapfinal (28)\stoot
+apfinal\node_modules\
+ws\lib\websocket.js:9
+13:7)
+      at 
+ClientRequest.emit 
+(node:events:518:28)
+      at HTTPParser.p
+arserOnIncomingClient
+ (node:_http_client:7
+16:27)
+      at HTTPParser.p
+arserOnHeadersComplet
+e (node:_http_common:
+117:17)
+      at TLSSocket.so
+cketOnData (node:_htt
+p_client:558:22)
+      at 
+TLSSocket.emit 
+(node:events:518:28)
+      at addChunk (no
+de:internal/streams/r
+eadable:561:12)
+      at readableAddC
+hunkPushByteMode (nod
+e:internal/streams/re
+adable:512:3)
+      at 
+Readable.push (node:i
+nternal/streams/reada
+ble:392:5)
+      at 
+TLSWrap.onStreamRead 
+(node:internal/stream
+_base_commons:189:23)
+,
+  
+[Symbol(kMessage)]: 
+'Unexpected server 
+response: 401'
+}

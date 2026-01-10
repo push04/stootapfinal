@@ -1,0 +1,73 @@
+﻿Testing database connection...
+node.exe : 
+Connection failed: 
+error: Tenant or 
+user not found
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (Connect   
+ ion fail... user    
+ not found:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+    at file:///C:/Use
+rs/pushp/Downloads/st
+ootapfinal%20(28)/sto
+otapfinal/node_module
+s/@neondatabase/serve
+rless/index.mjs:1345:
+74
+    at process.proces
+sTicksAndRejections (
+node:internal/process
+/task_queues:105:5)
+    at async NeonPrep
+aredQuery.execute (C:
+\Users\pushp\Download
+s\stootapfinal (28)\s
+tootapfinal\node_modu
+les\src\neon-serverle
+ss\session.ts:102:18)
+    at async 
+testConnection (C:\Us
+ers\pushp\Downloads\s
+tootapfinal (28)\stoo
+tapfinal\test-db.ts:9
+:24) {
+  length: 52,
+  severity: 'FATAL',
+  code: 'XX000',
+  detail: undefined,
+  hint: undefined,
+  position: 
+undefined,
+  internalPosition: 
+undefined,
+  internalQuery: 
+undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: 
+undefined,
+  constraint: 
+undefined,
+  file: undefined,
+  line: undefined,
+  routine: undefined
+}

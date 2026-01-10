@@ -1,0 +1,79 @@
+1) Replace DB access with Supabase REST (no Postgres clients)
+
+Delete/retire code that builds/uses a Postgres connection string (e.g., the getConnectionString and Neon Pool in server/app.ts) and anything that relies on DATABASE_URL or the pooler string built from SUPABASE_URL + SUPABASE_DB_PASSWORD 
+
+app
+
+.
+
+Remove Drizzle + Neon usage from the request path (e.g., server/storage-db.ts methods like getAllServices, createOrder, etc., which currently use SQL via db) and re-implement them using @supabase/supabase-js with the Supabase REST API. Preserve the return shapes expected by routes like /api/services, /api/categories, /api/orders, etc. (see how routes read from storage) 
+
+storage-db
+
+ 
+
+routes
+
+ 
+
+routes
+
+.
+
+Server-side, instantiate Supabase with SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (needed to bypass RLS for admin/protected actions). On the client, use NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY.
+
+Keep all route URLs exactly the same so the frontend keeps working: /api/services, /api/categories, /api/cart, /api/orders, /api/admin/*, /api/site-content/*, /api/ai/concierge, etc. (See server/routes.ts for the complete list) 
+
+routes
+
+ 
+
+routes
+
+ 
+
+routes
+
+.
+
+2) Replace session-based admin auth with stateless signed cookies
+
+Remove connect-pg-simple and the Neon Pool used for the session store in server/app.ts 
+
+app
+
+.
+
+Implement admin auth as a stateless signed cookie (JWT/iron-session/cookie-session) using SESSION_SECRET.
+
+/api/admin/login: verify credentials against ADMIN_USERNAME + ADMIN_PASSWORD_HASH (same logic as now), then set a signed cookie; no DB needed (see existing admin verify helper) 
+
+auth
+
+ 
+
+auth
+
+.
+
+/api/admin/check: read the cookie to decide isAdmin, mirroring the current semantics (it currently checks req.session?.adminId) 
+
+routes
+
+.
+
+/api/admin/logout: clear the cookie.
+
+Remove any session table requirements.
+
+3) Auth flows for end users + Profile routing/guard
+
+Implement Supabase Auth (email/password) on the client with @supabase/supabase-js.
+
+After successful login or register, navigate to /profile.
+
+Protect /profile: on mount, check the client’s Supabase auth session. If no session, toast “Please login or register first” and redirect to /login. The profile page is currently mock-data only (see local state) — replace with data pulled from Supabase profiles table, keeping existing UI intact 
+
+Profile
+
+.
