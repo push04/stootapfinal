@@ -1,4 +1,11 @@
+
 node_modules
 
 # Local Netlify folder
 .netlify
+
+# Debug scripts
+scripts/
+
+# Environment variables
+.env
