@@ -40,7 +40,7 @@ const packages = [
         id: "foundation",
         name: "Foundation Package",
         tagline: "From Idea to Legal Reality",
-        price: "65,000",
+        price: "99,000",
         icon: Building2,
         color: "bg-blue-600",
         forWhom: "First-time founders or early-stage ideas that need clarity, legality, and structure.",
